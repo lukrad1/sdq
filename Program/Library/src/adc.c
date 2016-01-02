@@ -1,0 +1,257 @@
+/** \file adc.c
+* \brief This file contains definitions system clock and timers functions.
+*
+* \author Lukasz Radola
+* \date 30.06.15
+* 
+*/
+#ifdef __cplusplus
+  extern "C" {
+#endif
+/****************************************************************************/
+/*                              INCLUDE FILES                               */
+/****************************************************************************/
+/* std C library */
+/* ... */
+/* other (non local) library */
+/* ... */
+/* local library */
+#include "stm32l0xx.h"
+#include "gpio.h"
+#include "adc.h"
+
+/****************************************************************************/
+/*                      DECLARATION AND DEFINITIONS                         */
+/****************************************************************************/
+/* Macro and const variable definition (local) */
+
+/* Typedef definition (local) */
+
+
+/*! Local struct which contains adc measure result, adc operation flags etc. */
+static volatile struct
+{
+	uint8_t isInitiated : 1;    /*!< Did ADC initialization make? */
+	uint8_t dummyConversionInitiated : 1;  /*!< Did Dummy Conversion make?*/
+	uint8_t vrefInitiated : 1;  /*!< Did Vref initialization make?*/
+
+  uint8_t measure_flag : 1;
+  
+	uint16_t vref_adc;    /*!< Vref value in ADC */
+	uint16_t vref_mv;     /*!< Vref value in [mV] */
+	uint16_t temp_adc;    /*!< Temperature value in ADC */
+	int16_t temp_degree;  /*!< Temperature value in [mV] */
+	uint16_t batt_mv;     /*!< Battery value in [mV] */
+  
+  uint32_t EE_Vref;
+} adc__data_s = {0};
+
+/****************************************************************************/
+/*                         GLOBAL VARIABLE DECLARATION                      */
+/****************************************************************************/
+
+/* Global variable declaration */
+int32_t temperature_C; //contains the computed temperature
+
+/****************************************************************************/
+/*                  FUNCTIONS DECLARATIONS AND DEFINITIONS                  */
+/****************************************************************************/
+
+/* Static function declaration */
+/* ... */
+/* Functions definitions (1. Static functions 2. Local exported functions */
+/* 3. Interface (exported) functions) */
+
+
+/**
+* \brief Dummy Conversion function.
+*
+* This function makes dummy adc conversion. It is required to measure adc correctly.  
+* 
+*/
+
+static void adc__DummyConversion(void)
+{
+
+	adc__data_s.dummyConversionInitiated = 1;
+}
+
+
+
+/******************************* END FUNCTION *********************************/
+
+/**
+* \brief ADC initialization function.
+*
+* This init function sets adc register, system clock etc. 
+*
+*/
+static void adc__Init(void)
+{
+
+  /* SetClockForADC */
+  /* (1) Enable the peripheral clock of the ADC and SYSCFG */
+    RCC->APB2ENR |= RCC_APB2ENR_ADC1EN | RCC_APB2ENR_SYSCFGEN; /* (1) */
+
+  /* ConfigureADC */
+  /* (1) Select HSI16 by writing 00 in CKMODE (reset value) */
+  /* (2) Select continuous mode */
+  /* (3) Select CHSEL18 for temperature sensor */
+  /* (4) Select a sampling mode of 111 i.e. 239.5 ADC clk to be greater than 2.2us */
+  /* (5) Wake-up the Temperature sensor (only for VLCD, Temp sensor and VRefInt) */
+  /* (6) Enable Sensor buffer  for ADC by setting both  ENBUF_SENSOR_ADC bit
+        and EN_VREFINT in SYSCFG_CFGR3 */
+  /* (7) Wait for SENSOR ADC buffer ready */
+  //ADC1->CFGR2 &= ~ADC_CFGR2_CKMODE; /* (1) */
+  ADC1->CFGR1 |= ADC_CFGR1_AUTOFF; /* (2) */
+  ADC1->CHSELR = ADC_CHSELR_CHSEL18; /* (3) */
+  ADC1->SMPR |=  ADC_SMPR_SMPR; /* (4) */
+  ADC->CCR |= ADC_CCR_TSEN; /* (5) */
+  SYSCFG->CFGR3 |= SYSCFG_CFGR3_ENBUF_SENSOR_ADC | SYSCFG_CFGR3_EN_VREFINT; /* (6) */
+  while ((SYSCFG->CFGR3 & SYSCFG_CFGR3_SENSOR_ADC_RDYF) == 0) /* (7) */
+  {
+   /* For robust implementation, add here time-out management */
+  }
+
+  /* Calibrate ADC */
+  /* (1) Ensure that ADEN = 0 */
+  /* (2) Clear ADEN */
+  /* (3) Set ADCAL=1 */
+  /* (4) Wait until EOCAL=1 */
+  /* (5) Clear EOCAL */
+  if ((ADC1->CR & ADC_CR_ADEN) != 0) /* (1) */
+  {
+   ADC1->CR &= (uint32_t)(~ADC_CR_ADEN);  /* (2) */
+  }
+  ADC1->CR |= ADC_CR_ADCAL; /* (3) */
+  while ((ADC1->ISR & ADC_ISR_EOCAL) == 0) /* (4) */
+  {
+   /* For robust implementation, add here time-out management */
+  }
+  ADC1->ISR |= ADC_ISR_EOCAL; /* (5) */
+
+
+  /* (1) Enable the ADC */
+  /* (2) Wait until ADC ready if AUTOFF is not set */
+  ADC1->CR |= ADC_CR_ADEN; /* (1) */
+  if ((ADC1->CFGR1 &  ADC_CFGR1_AUTOFF) == 0)
+  {
+   while ((ADC1->ISR & ADC_ISR_ADRDY) == 0) /* (2) */
+   {
+     /* For robust implementation, add here time-out management */
+   }
+  }
+
+}
+
+/******************************* END FUNCTION *********************************/
+
+/**
+* \brief ADC temperature measured function.
+*
+* This function measures temperature value in ADC. Other function converts adc 
+* value into Celsius degree. All results are saving into adc_data_s.
+*/
+static void adc__MeasureTemp(void)
+{
+
+}
+
+/******************************* END FUNCTION *********************************/
+
+/**
+* \brief Convert function: adc_temperature to temperature in degree.
+*
+* This function converts temperature value in ADC to temperature in Celsius degree. 
+* The temperature value is saving in adc_data.temp_degree.
+*
+* \param[in] adc_temperature Temperature value in ADC.
+*/
+/**
+  * Brief   This function computes the temperature from the temperature sensor measure
+  *         The computation uses the following formula :
+  *         Temp = (Vsense - V30)/Avg_Slope + 30
+  *         Avg_Slope = (V130 - V30) / (130 - 30)
+  *         V30 = Vsense @30°C (calibrated in factory @3V)
+  *         V130 = Vsense @110°C (calibrated in factory @3V)
+  *         VDD_APPLI/VDD_CALIB coefficient allows to adapt the measured value
+  *         according to the application board power supply versus the
+  *         factory calibration power supply.
+  * Param   measure is the a voltage measured from the temperature sensor (can have been filtered)
+  * Retval  returns the computed temperature
+  */
+static int32_t adc__ConvertTemperature(int32_t measure)
+{
+  int32_t temperature;
+
+  temperature = ((measure * VDD_APPLI / VDD_CALIB) - (int32_t) *TEMP30_CAL_ADDR ) ;
+  temperature = temperature * (int32_t)(130 - 30);
+  temperature = temperature / (int32_t)(*TEMP130_CAL_ADDR - *TEMP30_CAL_ADDR);
+  temperature = temperature + 30;
+  return(temperature);
+}
+
+/******************************* END FUNCTION *********************************/
+
+/**
+* \brief ADC Reference Voltage measured function.
+*
+* This function measures Reference Voltage and converts it to mV. All results are
+* saved into adc_data_s.
+*/
+static void adc__MeasureVref(void)
+{
+  
+}
+
+/******************************* END FUNCTION *********************************/
+
+void ADC__DeInit(void)
+{
+  /* (1) Ensure that no conversion on going */
+  /* (2) Stop any ongoing conversion */
+  /* (3) Wait until ADSTP is reset by hardware i.e. conversion is stopped */
+  /* (4) Disable the ADC */
+  /* (5) Wait until the ADC is fully disabled */
+  if ((ADC1->CR & ADC_CR_ADSTART) != 0) /* (1) */
+  {
+    ADC1->CR |= ADC_CR_ADSTP; /* (2) */
+  }
+  while ((ADC1->CR & ADC_CR_ADSTP) != 0) /* (3) */
+  {
+     /* For robust implementation, add here time-out management */
+  }
+  ADC1->CR |= ADC_CR_ADDIS; /* (4) */
+  while ((ADC1->CR & ADC_CR_ADEN) != 0) /* (5) */
+  {
+    /* For robust implementation, add here time-out management */
+  }
+
+}
+
+/******************************* END FUNCTION *********************************/
+
+uint16_t ADC__CalcBattery(void)
+{
+
+}
+
+/******************************* END FUNCTION *********************************/
+
+int32_t ADC__CalcTemperature(void)
+{
+  adc__Init();
+  ADC1->CR |= ADC_CR_ADSTART; /* start the ADC conversion */
+  while ((ADC1->ISR & ADC_ISR_EOC) == 0); /* Wait end of conversion */
+  temperature_C = adc__ConvertTemperature((int32_t) ADC1->DR);
+  ADC__DeInit();
+  return temperature_C;
+}
+
+/******************************* END FUNCTION *********************************/
+
+
+
+#ifdef __cplusplus
+  }
+#endif
