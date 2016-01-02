@@ -23,7 +23,7 @@
 #include "timer.h"
 #include "system.h"
 #include "gpio.h"
-//#include "adc.h"
+#include "adc.h"
 /****************************************************************************/
 /*                      DECLARATION AND DEFINITIONS                         */
 /****************************************************************************/
@@ -80,17 +80,17 @@ int main(void)
 
     if(counter >= 3000)
     {
-      //ADC__CalcTemperature();
+      ADC__CalcTemperature();
       counter = 0;
-//      if(temperature_C > 25)
-//      {
-//        GPIOA->BSRR = (1<<5); /* Set red led on PA5 */
-//      }
-//      else
-//      {
-//        GPIOA->BRR = (1<<5); /* Switch off red led on PA5 */
-//      }
-      GPIOA->ODR ^= (1 << 5);//toggle green led on PA5
+      if(temperature_C > 25)
+      {
+        GPIOA->BSRR = (1<<5); /* Set red led on PA5 */
+      }
+      else
+      {
+        GPIOA->BRR = (1<<5); /* Switch off red led on PA5 */
+      }
+     // GPIOA->ODR ^= (1 << 5);//toggle green led on PA5
     }
   }
 }
