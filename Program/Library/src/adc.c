@@ -93,54 +93,7 @@ static void adc__Init(void)
   /* (1) Enable the peripheral clock of the ADC and SYSCFG */
     RCC->APB2ENR |= RCC_APB2ENR_ADC1EN | RCC_APB2ENR_SYSCFGEN; /* (1) */
 
-  /* ConfigureADC */
-  /* (1) Select HSI16 by writing 00 in CKMODE (reset value) */
-  /* (2) Select continuous mode */
-  /* (3) Select CHSEL18 for temperature sensor */
-  /* (4) Select a sampling mode of 111 i.e. 239.5 ADC clk to be greater than 2.2us */
-  /* (5) Wake-up the Temperature sensor (only for VLCD, Temp sensor and VRefInt) */
-  /* (6) Enable Sensor buffer  for ADC by setting both  ENBUF_SENSOR_ADC bit
-        and EN_VREFINT in SYSCFG_CFGR3 */
-  /* (7) Wait for SENSOR ADC buffer ready */
-  //ADC1->CFGR2 &= ~ADC_CFGR2_CKMODE; /* (1) */
-  ADC1->CFGR1 |= ADC_CFGR1_AUTOFF; /* (2) */
-  ADC1->CHSELR = ADC_CHSELR_CHSEL18; /* (3) */
-  ADC1->SMPR |=  ADC_SMPR_SMPR; /* (4) */
-  ADC->CCR |= ADC_CCR_TSEN; /* (5) */
-  SYSCFG->CFGR3 |= SYSCFG_CFGR3_ENBUF_SENSOR_ADC | SYSCFG_CFGR3_EN_VREFINT; /* (6) */
-  while ((SYSCFG->CFGR3 & SYSCFG_CFGR3_SENSOR_ADC_RDYF) == 0) /* (7) */
-  {
-   /* For robust implementation, add here time-out management */
-  }
 
-  /* Calibrate ADC */
-  /* (1) Ensure that ADEN = 0 */
-  /* (2) Clear ADEN */
-  /* (3) Set ADCAL=1 */
-  /* (4) Wait until EOCAL=1 */
-  /* (5) Clear EOCAL */
-  if ((ADC1->CR & ADC_CR_ADEN) != 0) /* (1) */
-  {
-   ADC1->CR &= (uint32_t)(~ADC_CR_ADEN);  /* (2) */
-  }
-  ADC1->CR |= ADC_CR_ADCAL; /* (3) */
-  while ((ADC1->ISR & ADC_ISR_EOCAL) == 0) /* (4) */
-  {
-   /* For robust implementation, add here time-out management */
-  }
-  ADC1->ISR |= ADC_ISR_EOCAL; /* (5) */
-
-
-  /* (1) Enable the ADC */
-  /* (2) Wait until ADC ready if AUTOFF is not set */
-  ADC1->CR |= ADC_CR_ADEN; /* (1) */
-  if ((ADC1->CFGR1 &  ADC_CFGR1_AUTOFF) == 0)
-  {
-   while ((ADC1->ISR & ADC_ISR_ADRDY) == 0) /* (2) */
-   {
-     /* For robust implementation, add here time-out management */
-   }
-  }
 
 }
 
@@ -154,7 +107,56 @@ static void adc__Init(void)
 */
 static void adc__MeasureTemp(void)
 {
+  /* ConfigureADC */
+    /* (1) Select HSI16 by writing 00 in CKMODE (reset value) */
+    /* (2) Select auto off mode */
+    /* (3) Select CHSEL18 for temperature sensor */
+    /* (4) Select a sampling mode of 111 i.e. 239.5 ADC clk to be greater than 2.2us */
+    /* (5) Wake-up the Temperature sensor (only for VLCD, Temp sensor and VRefInt) */
+    /* (6) Enable Sensor buffer  for ADC by setting both  ENBUF_SENSOR_ADC bit
+          and EN_VREFINT in SYSCFG_CFGR3 */
+    /* (7) Wait for SENSOR ADC buffer ready */
+    //ADC1->CFGR2 &= ~ADC_CFGR2_CKMODE; /* (1) */
+    ADC1->CFGR1 |= ADC_CFGR1_AUTOFF; /* (2) */
+    ADC1->CHSELR = ADC_CHSELR_CHSEL18; /* (3) */
+    ADC1->SMPR |=  ADC_SMPR_SMPR; /* (4) */
+    ADC->CCR |= ADC_CCR_TSEN; /* (5) */
+    SYSCFG->CFGR3 |= SYSCFG_CFGR3_ENBUF_SENSOR_ADC | SYSCFG_CFGR3_EN_VREFINT; /* (6) */
+    while ((SYSCFG->CFGR3 & SYSCFG_CFGR3_SENSOR_ADC_RDYF) == 0) /* (7) */
+    {
+     /* For robust implementation, add here time-out management */
+    }
 
+    /* Calibrate ADC */
+    /* (1) Ensure that ADEN = 0 */
+    /* (2) Clear ADEN */
+    /* (3) Set ADCAL=1 */
+    /* (4) Wait until EOCAL=1 */
+    /* (5) Clear EOCAL */
+    if ((ADC1->CR & ADC_CR_ADEN) != 0) /* (1) */
+    {
+     ADC1->CR &= (uint32_t)(~ADC_CR_ADEN);  /* (2) */
+    }
+    ADC1->CR |= ADC_CR_ADCAL; /* (3) */
+    while ((ADC1->ISR & ADC_ISR_EOCAL) == 0) /* (4) */
+    {
+     /* For robust implementation, add here time-out management */
+    }
+    ADC1->ISR |= ADC_ISR_EOCAL; /* (5) */
+
+
+    /* (1) Enable the ADC */
+    /* (2) Wait until ADC ready if AUTOFF is not set */
+    ADC1->CR |= ADC_CR_ADEN; /* (1) */
+    if ((ADC1->CFGR1 &  ADC_CFGR1_AUTOFF) == 0)
+    {
+     while ((ADC1->ISR & ADC_ISR_ADRDY) == 0) /* (2) */
+     {
+       /* For robust implementation, add here time-out management */
+     }
+    }
+    ADC1->CR |= ADC_CR_ADSTART; /* start the ADC conversion */
+    while ((ADC1->ISR & ADC_ISR_EOC) == 0); /* Wait end of conversion */
 }
 
 /******************************* END FUNCTION *********************************/
@@ -241,8 +243,7 @@ uint16_t ADC__CalcBattery(void)
 int32_t ADC__CalcTemperature(void)
 {
   adc__Init();
-  ADC1->CR |= ADC_CR_ADSTART; /* start the ADC conversion */
-  while ((ADC1->ISR & ADC_ISR_EOC) == 0); /* Wait end of conversion */
+  adc__MeasureTemp();
   temperature_C = adc__ConvertTemperature((int32_t) ADC1->DR);
   ADC__DeInit();
   return temperature_C;

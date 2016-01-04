@@ -206,6 +206,7 @@ void GPIO__ConfigLedG(uint8_t state);
 */
 void GPIO__ConfigLedB(uint8_t state);
 
+void GPIO__ConfigButton(uint8_t state);
 #ifdef __cplusplus
   }
 #endif

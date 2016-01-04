@@ -17,21 +17,7 @@
 /*                              FUNCTIONS LIST                              */
 /****************************************************************************/
 /*
-void UART__Init(uint32_t baudrate);	
-void UART__Start(void);														
-void UART__Stop(void);														
-void UART__Poll(void); 	
-void UART__RxInterrupt(uint8_t data);							
-void UART__TxInterrupt(void);
-void UART__Tick(void);
-bool UART__CheckReceive(void);
-bool UART__CheckSendAck(void);
-bool UART__CheckSendData(void);
-void UART__SendACK(uint8_t type);
-void UART__SendNACK(uint8_t type);
-void UART__SendERROR(uint8_t error);
-void UART__SendBUSY(void);
-void UART__SendIDLE(void);
+
 */
 /****************************************************************************/
 /*                              INCLUDE FILES                               */
@@ -51,25 +37,12 @@ void UART__SendIDLE(void);
 /* Typedef definition */
 
 /*========================= UART_TYPE DEFINITION ==================*/
-#define UART__ID_GET					            0x00
-#define UART__ID_REPORT										0xFF
 
-/*==============================================================*/
 
 #define UART__UART_FCPU 			MAIN__F_CPU /* UART CPU Value */ 				
 #define UART__BAUDRATE_115200		115200
 #define UART__BAUDRATE_9600 		9600
-#define UART__STARTBYTE				0xAA
-#define UART__STOPBYTE				0x55
-#define UART__TXBUFFER 				270
-#define UART__RXBUFFER 				270
 
-
-#define UART__RETRANMISIONVALUE 50
-/* Minimum time value in ms between uart transmision */
-#define UART__MINBEETWENTRANMISIONVALUE 30	
-/* Maximum recive data time in ms */
-#define UART__RXTIMEOUTVALUE 	30
 
 /****************************************************************************/
 /*                         GLOBAL VARIABLE DECLARATION                      */
@@ -77,6 +50,8 @@ void UART__SendIDLE(void);
 
 /* Global variable declaration */
 
+// extern volatile const uint8_t stringtosend[4];
+ extern volatile uint8_t stringtoreceive[2];
 
 /****************************************************************************/
 /*                  FUNCTIONS DECLARATIONS AND DEFINITIONS                  */
@@ -107,14 +82,8 @@ void UART__Poll(void);
 void UART__RxInterrupt(uint8_t data);							
 void UART__TxInterrupt(void);
 // Pozostale funkcje
-void UART__Tick(void);																							
-uint8_t UART__CheckReceive(void);
-uint8_t UART__CheckSendData(void);
-void UART__SendACK(uint8_t type);
-void UART__SendNACK(uint8_t type);
-void UART__SendERROR(uint8_t error);
-void UART__SendBUSY(void);
-void UART__SendIDLE(void);
+void UART__DMAConfig(void);
+void UART__StartDmaTransmision(void);
 #ifdef __cplusplus
   }
 #endif
