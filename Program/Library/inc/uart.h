@@ -51,7 +51,7 @@
 /* Global variable declaration */
 
 // extern volatile const uint8_t stringtosend[4];
- extern volatile uint8_t stringtoreceive[2];
+ extern volatile uint8_t stringtoreceive[4];
 
 /****************************************************************************/
 /*                  FUNCTIONS DECLARATIONS AND DEFINITIONS                  */
@@ -79,11 +79,12 @@ void UART__Start(void);
 void UART__Stop(void);														
 // Funkcje odbioru i wysylania danych
 void UART__Poll(void); 	
-void UART__RxInterrupt(uint8_t data);							
+void UART__RxInterrupt();
 void UART__TxInterrupt(void);
 // Pozostale funkcje
 void UART__DMAConfig(void);
-void UART__StartDmaTransmision(void);
+void UART__StartDmaTransmision(uint8_t* data, uint8_t length);
+void UART__SetIntTempToSend(void);
 #ifdef __cplusplus
   }
 #endif

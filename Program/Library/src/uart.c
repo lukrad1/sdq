@@ -21,7 +21,7 @@ extern "C"
 #include "stm32l0xx.h"
 #include "gpio.h"
 #include "uart.h"
-
+#include "adc.h"
 /****************************************************************************/
 /*                      DECLARATION AND DEFINITIONS                         */
 /****************************************************************************/
@@ -30,6 +30,23 @@ extern "C"
 /* Typedef definition (local) */
 
 /* UART status union. In this union are uart flags for example transmision flag */
+static volatile union uart__status_u
+{
+  uint8_t status; /* status variable, which is used to clear all uart status flag */
+  struct
+  {
+    uint8_t txBusyFlag: 1;
+    uint8_t rxBusyFlag: 1;
+    uint8_t receivedData: 1;
+    uint8_t sendInternalTemp: 1;
+    uint8_t flag5: 1;
+    uint8_t fullTransmision: 1;
+    uint8_t flag7: 1;
+  };
+}
+uart__status_u = {0}; /* Uart__status_u union declaraction. The variable name
+                         is this same: uart__status_u. */
+
 
 /****************************************************************************/
 /*                         GLOBAL VARIABLE DECLARATION                      */
@@ -37,8 +54,9 @@ extern "C"
 
 /* Global variable declaration */
 
-volatile const uint8_t stringtosend[4] = "DMA\n";
-volatile uint8_t stringtoreceive[2];
+volatile uint8_t stringtosend[10];
+volatile uint8_t stringtoreceive[4];
+volatile uint8_t RxBuffer[10];
 /****************************************************************************/
 /*                  FUNCTIONS DECLARATIONS AND DEFINITIONS                  */
 /****************************************************************************/
@@ -102,7 +120,7 @@ read from this memory after the peripheral event.*/
    DMA1_CSELR->CSELR = (DMA1_CSELR->CSELR & ~DMA_CSELR_C5S) | (4 << (4 * 4)); /* (5) */
    DMA1_Channel5->CPAR = (uint32_t)&(USART2->RDR); /* (6) */
    DMA1_Channel5->CMAR = (uint32_t)stringtoreceive; /* (7) */
-   DMA1_Channel5->CNDTR = sizeof(stringtoreceive); /* (8) */
+   DMA1_Channel5->CNDTR = 4; /* (8) */
    DMA1_Channel5->CCR = DMA_CCR_MINC | DMA_CCR_TCIE | DMA_CCR_EN; /* (9) */
 
    /* Configure IT */
@@ -113,14 +131,138 @@ read from this memory after the peripheral event.*/
 
 }
 
-void UART__StartDmaTransmision(void)
+void UART__StartDmaTransmision(uint8_t* data, uint8_t length)
 {
+  int i;
+  length += 2; // na znak konca lini
+  if(length > 10)
+  {
+    length = 10;
+  }
+  for(i = 0; i < (length - 2); i++)
+  {
+    stringtosend[i] = data[i];
+    if(data[i] == 0)
+    {
+      length = i+2; // wyjdz z fora i jednoczesnie miej miejsce na lf
+      i = length;
+    }
+  }
+  stringtosend[length-2] = 10;
+  stringtosend[length-1] = 12;
   /* start 8-bit transmission with DMA */
   DMA1_Channel4->CCR &=~ DMA_CCR_EN;
-  DMA1_Channel4->CNDTR = sizeof(stringtosend);/* Data size */
+  DMA1_Channel4->CNDTR = length-1;/* Data size */
   DMA1_Channel4->CCR |= DMA_CCR_EN;
+  uart__status_u.txBusyFlag = 1;
+}
+
+void UART__RxInterrupt(void)
+{
+  static uint8_t index = 0;
+  uint8_t i;
+
+  if(!uart__status_u.receivedData)
+  {
+    for(i = 0; i < 4; i++)
+    {
+      RxBuffer[i] = stringtoreceive[i];
+      stringtoreceive[i] = 0;
+    }
+
+      // dziala ale konieczne zabezpieczenie, gdy nie przyjda 4 ramki, tylko np dwie
+    // to wtedy jak znowu przyjda 4 to da 6 i sie nie zalaczy
+    if(RxBuffer[i-1] == 10 && RxBuffer[i-2] == 13) // cr + lf
+    {
+      //index = 0;
+      uart__status_u.receivedData = 1;
+    }
+
+  }
+}
+
+void UART__TxInterrupt(void)
+{
+  uart__status_u.txBusyFlag = 0;
+}
+
+void UART__Poll(void)
+{
+  uint8_t data[4];
+
+  if(uart__status_u.receivedData)
+  {
+
+    if(RxBuffer[0] == 49 && RxBuffer[1] == 49)
+      {
+        //jazda_do_przodu();
+        GPIOA->ODR ^= (1 << 5);//toggle green led on PA5
+      }
+      else if(RxBuffer[0] == 49 && RxBuffer[1] == 48)
+      {
+        //skret_w_lewo();
+      }
+      else if(RxBuffer[0] == 50 && RxBuffer[1] == 50)
+      {
+        //jazda_zatrzymana();
+        //PWM wypelnienie 0
+//        analogWrite(5, 0);
+//        analogWrite(3, 0);
+      }
+      else if(RxBuffer[0] == 50 && RxBuffer[1] == 48)
+      {
+        //skret_w_prawo();
+      }
+      else if(RxBuffer[0] == 50 && RxBuffer[1] == 53)
+      {
+        //jazda_do_tylu();
+      }
+      else if(RxBuffer[0] == 37)
+      {
+        //Serial.print("PWM VALUE IS ");
+        //Serial.println(buffor[1], DEC);
+        if(RxBuffer[1] < 195)
+        {
+//          analogWrite(5, buffor[1]);
+//          analogWrite(3, buffor[1]);
+        }
+        else
+        {
+//          analogWrite(5, 255);
+//          analogWrite(3, 255);
+        }
+      }
+
+    uart__status_u.receivedData = 0;
+  }
+
+  if(!uart__status_u.txBusyFlag)
+  {
+    if(uart__status_u.sendInternalTemp)
+    {
+
+      uart__status_u.sendInternalTemp = 0;
+
+      sprintf(data, "%d", (int)temperature_C);
+
+
+      UART__StartDmaTransmision(data, 2);
+    }
+  }
 
 }
+
+
+/******************************* END FUNCTION *********************************/
+
+void UART__SetIntTempToSend(void)
+{
+  uart__status_u.sendInternalTemp = 1;
+}
+
+/******************************* END FUNCTION *********************************/
+
+
 #ifdef __cplusplus
 }
 #endif

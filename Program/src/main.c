@@ -60,6 +60,9 @@ uint16_t counter = 0;
 
 int main(void)
 {
+  // GPIOA->BSRR = (1<<5); /* Set red led on PA5 */
+  // GPIOA->BRR = (1<<5); /* Switch off red led on PA5 */
+
   /*System_Init(); This function is enabled in startup stm32 file by default*/
   SystemClock_Config();
   /* Enable SYSCFG Clock */
@@ -83,29 +86,14 @@ int main(void)
       counter++;
     }
 
-    if(counter >= 3000)
+    if(counter >= 5000)
     {
       ADC__CalcTemperature();
+      UART__SetIntTempToSend();
       counter = 0;
-      if(temperature_C > 25)
-      {
-        // GPIOA->BSRR = (1<<5); /* Set red led on PA5 */
-      }
-      else
-      {
-        // GPIOA->BRR = (1<<5); /* Switch off red led on PA5 */
-      }
-      if((GPIOC->IDR & GPIO_IDR_ID13) == 0)
-      {
-        //GPIOA->ODR ^= (1 << 5);//toggle green led on PA5
-        //GPIOA->BSRR = (1 << 5); /* Set red led on PA5 */
-      }
-      else
-      {
-        GPIOA->BRR = (1 << 5); /* Switch off red led on PA5 */
-      }
-
     }
+
+    UART__Poll();
   }
 }
 
@@ -179,6 +167,7 @@ void SysTick_Handler(void)
  */
 void EXTI4_15_IRQHandler(void)
 {
+  static uint8_t data[] = "DMA";
 
   if((EXTI->PR & EXTI_PR_PR13) == EXTI_PR_PR13)
   {
@@ -187,7 +176,7 @@ void EXTI4_15_IRQHandler(void)
     EXTI->PR |= EXTI_PR_PR13;
 
     GPIOA->ODR ^= (1 << 5);//toggle green led on PA5
-    UART__StartDmaTransmision();
+    UART__StartDmaTransmision(data, 3);
 
   }
 }
@@ -202,17 +191,13 @@ void DMA1_Channel4_5_6_7_IRQHandler(void)
   if((DMA1->ISR & DMA_ISR_TCIF4) == DMA_ISR_TCIF4)
   {
     DMA1->IFCR = DMA_IFCR_CTCIF4;/* Clear TC flag */
+    UART__TxInterrupt();
   }
 
   else if((DMA1->ISR & DMA_ISR_TCIF5) == DMA_ISR_TCIF5)
   {
     DMA1->IFCR = DMA_IFCR_CTCIF5;/* Clear TC flag */
-
-    if(strcmp("OK", (const char *) stringtoreceive) == 0)
-    {
-      GPIOA->ODR ^= (1 << 5);  //toggle green led on PA5
-    }
-
+    UART__RxInterrupt();
     DMA1_Channel5->CCR &= ~ DMA_CCR_EN;
     DMA1_Channel5->CNDTR = sizeof(stringtoreceive);/* Data size */
     DMA1_Channel5->CCR |= DMA_CCR_EN;
@@ -222,6 +207,7 @@ void DMA1_Channel4_5_6_7_IRQHandler(void)
     NVIC_DisableIRQ(DMA1_Channel4_5_6_7_IRQn);/* Disable DMA1_Channel2_3_IRQn */
   }
 }
+
 
 #ifdef __cplusplus
 }
