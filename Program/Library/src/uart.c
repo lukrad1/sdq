@@ -54,8 +54,8 @@ uart__status_u = {0}; /* Uart__status_u union declaraction. The variable name
 
 /* Global variable declaration */
 
-volatile uint8_t stringtosend[10];
-volatile uint8_t stringtoreceive[4];
+volatile uint8_t stringtosend[20];
+volatile uint8_t stringtoreceive[1];
 volatile uint8_t RxBuffer[10];
 /****************************************************************************/
 /*                  FUNCTIONS DECLARATIONS AND DEFINITIONS                  */
@@ -120,7 +120,7 @@ read from this memory after the peripheral event.*/
    DMA1_CSELR->CSELR = (DMA1_CSELR->CSELR & ~DMA_CSELR_C5S) | (4 << (4 * 4)); /* (5) */
    DMA1_Channel5->CPAR = (uint32_t)&(USART2->RDR); /* (6) */
    DMA1_Channel5->CMAR = (uint32_t)stringtoreceive; /* (7) */
-   DMA1_Channel5->CNDTR = 4; /* (8) */
+   DMA1_Channel5->CNDTR = 1; /* (8) */
    DMA1_Channel5->CCR = DMA_CCR_MINC | DMA_CCR_TCIE | DMA_CCR_EN; /* (9) */
 
    /* Configure IT */
@@ -135,9 +135,9 @@ void UART__StartDmaTransmision(uint8_t* data, uint8_t length)
 {
   int i;
   length += 2; // na znak konca lini
-  if(length > 10)
+  if(length > 20)
   {
-    length = 10;
+    length = 20;
   }
   for(i = 0; i < (length - 2); i++)
   {
@@ -160,24 +160,26 @@ void UART__StartDmaTransmision(uint8_t* data, uint8_t length)
 void UART__RxInterrupt(void)
 {
   static uint8_t index = 0;
-  uint8_t i;
 
   if(!uart__status_u.receivedData)
   {
-    for(i = 0; i < 4; i++)
+    if(stringtoreceive[0] == 0x02)// bit startu
     {
-      RxBuffer[i] = stringtoreceive[i];
-      stringtoreceive[i] = 0;
+      index = 0;
     }
-
-      // dziala ale konieczne zabezpieczenie, gdy nie przyjda 4 ramki, tylko np dwie
-    // to wtedy jak znowu przyjda 4 to da 6 i sie nie zalaczy
-    if(RxBuffer[i-1] == 10 && RxBuffer[i-2] == 13) // cr + lf
+    else if(index < 4)
     {
-      //index = 0;
-      uart__status_u.receivedData = 1;
-    }
+      RxBuffer[index] = stringtoreceive[0];
+      stringtoreceive[0] = 0;
 
+      if(RxBuffer[index] == 10 && RxBuffer[index-1] == 13) // cr + lf
+      {
+        index = 4;
+        uart__status_u.receivedData = 1;
+      }
+
+      index++;
+    }
   }
 }
 
@@ -247,6 +249,8 @@ void UART__Poll(void)
 
 
       UART__StartDmaTransmision(data, 2);
+      UART__StartDmaTransmision("*C", 2);
+
     }
   }
 

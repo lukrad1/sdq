@@ -51,7 +51,7 @@
 /* Global variable declaration */
 
 // extern volatile const uint8_t stringtosend[4];
- extern volatile uint8_t stringtoreceive[4];
+ extern volatile uint8_t stringtoreceive[1];
 
 /****************************************************************************/
 /*                  FUNCTIONS DECLARATIONS AND DEFINITIONS                  */
