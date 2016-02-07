@@ -59,13 +59,7 @@ enum ledColour LEDColour = OFF;
 
 void LED__Init(void)
 {
-  /* "Welcome screen" */
-//  GPIO__ConfigLedG(ENABLE);
-//  TIMER__DelayMs(1000); /* "Welcome screen" 1 sec LED ON and 1 sec LED off */
-//  GPIO__ConfigLedG(DISABLE);
-//  TIMER__DelayMs(1000);
-//  DEVICE__DCDC_Off();
-//  DEVICE__SetDeviceBatteryPowerFlag(DISABLE);
+
 }
 
 /******************************* END FUNCTION *********************************/
@@ -73,48 +67,6 @@ void LED__Init(void)
 void LED__RGB(uint8_t red, uint8_t green, uint8_t blue)
 {
 
-	//RED
-	if(red == OFF)
-	{
-		led__data_s.led__red_duty = OFF;
-	}
-	else if(red == ON)
-	{
-		led__data_s.led__red_duty = DEFAULT_LED_DUTY;
-	}
-	else if(red == XOR)
-	{
-		led__data_s.led__red_duty = 
-    (uint8_t)((led__data_s.led__red_duty)? OFF : DEFAULT_LED_DUTY);
-	}
-	//GREEN
-	if(green == OFF)
-	{
-		led__data_s.led__green_duty = OFF;
-	}
-	else if(green == ON)
-	{
-		led__data_s.led__green_duty = DEFAULT_LED_DUTY;
-	}
-	else if(green == XOR)
-	{
-		led__data_s.led__green_duty = 
-    (uint8_t)((led__data_s.led__green_duty)? OFF : DEFAULT_LED_DUTY);
-	}
-	//BLUE
-	if(blue == OFF)
-	{
-		led__data_s.led__blue_duty = OFF;
-	}
-	else if(blue == ON)
-	{
-		led__data_s.led__blue_duty = DEFAULT_LED_DUTY;
-	}
-	else if(blue == XOR)
-	{
-		led__data_s.led__blue_duty = 
-    (uint8_t)((led__data_s.led__blue_duty)? OFF : DEFAULT_LED_DUTY);
-	}
 	
 }
 
@@ -123,49 +75,6 @@ void LED__RGB(uint8_t red, uint8_t green, uint8_t blue)
 void LED__Poll(void)
 {
 	
-//	static int interrupt_counter = 0;
-//
-//	if(interrupt_counter < led__data_s.led__red_duty)
-//	{
-//		LED__RED_ON;
-//	}
-//	else
-//	{
-//		LED__RED_OFF;
-//	}
-//
-//	/*******************************  *********************************/
-//
-//	if(interrupt_counter < led__data_s.led__green_duty)
-//	{
-//		LED__GREEN_ON;
-//	}
-//	else
-//	{
-//		LED__GREEN_OFF;
-//	}
-//
-//	/*******************************  *********************************/
-//
-//
-//	if(interrupt_counter < led__data_s.led__blue_duty)
-//	{
-//
-//		LED__BLUE_ON;
-//	}
-//	else
-//	{
-//		LED__BLUE_OFF;
-//	}
-//
-//	/*******************************  *********************************/
-//
-//	interrupt_counter++;
-//
-//	if(interrupt_counter >= LED__TIME)
-//	{
-//		interrupt_counter = 0;
-//	}
 }
 
 /******************************* END FUNCTION *********************************/

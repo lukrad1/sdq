@@ -134,15 +134,7 @@ uint8_t ee_EraseEEPROM(uint8_t val)
 
 uint8_t ee_VerifyEEPROM(uint8_t val)
 {
-	/*uint16_t addr=0;
-	
-	for(addr=FLASH_DATA_EEPROM_START_PHYSICAL_ADDRESS;addr<=FLASH_DATA_EEPROM_END_PHYSICAL_ADDRESS;addr++)
-	{
-		if(EE__ReadByte(addr)!=val)
-			return RESET;
-	}
-	
-	return SET; */
+
 }
 
 #ifdef __cplusplus

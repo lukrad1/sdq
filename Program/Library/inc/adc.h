@@ -43,7 +43,7 @@ int16_t ADC__CalcTemperature(void);
 #define TEMP130_CAL_ADDR ((uint16_t*) ((uint32_t) 0x1FF8007E))
 #define TEMP30_CAL_ADDR ((uint16_t*) ((uint32_t) 0x1FF8007A))
 #define VDD_CALIB ((uint16_t) (300))
-#define VDD_APPLI ((uint16_t) (323))
+#define VDD_APPLI ((uint16_t) (326))
 
  /*! Special adress which contain Vref calibrate value */
 

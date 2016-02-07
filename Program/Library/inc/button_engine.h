@@ -70,4 +70,4 @@ void BUTTON__Init(void);
 #ifdef __cplusplus
   }
 #endif
-#endif /* FIBARO_BUTTON_ENGINE_BUTTON_ENGINE_H_ */
+#endif /* LRADOLA_BUTTON_ENGINE_BUTTON_ENGINE_H_ */

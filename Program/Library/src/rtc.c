@@ -4,8 +4,7 @@
 * \author Lukasz Radola
 * \date 02.08.15
 * 
-* \details All functions are copied from old flood sensor stm program, so 
-* this functions haven't comments etc.
+
 */
 #ifdef __cplusplus
   extern "C" {

@@ -22,6 +22,8 @@ extern "C"
 #include "gpio.h"
 #include "uart.h"
 #include "adc.h"
+#include "motors.h"
+
 /****************************************************************************/
 /*                      DECLARATION AND DEFINITIONS                         */
 /****************************************************************************/
@@ -174,7 +176,7 @@ void UART__RxInterrupt(void)
 
       if(RxBuffer[index] == 10 && RxBuffer[index-1] == 13) // cr + lf
       {
-        index = 4;
+        index = 4; // koniec transmisji i blokada, czekanie na bit startu
         uart__status_u.receivedData = 1;
       }
 
@@ -185,6 +187,8 @@ void UART__RxInterrupt(void)
 
 void UART__TxInterrupt(void)
 {
+  //kasowanie flagi zajetosci, bo wszystko bylo w dma, i gdy wszedlem do
+  // przerwaniato juz mam po transmisji, odebralem wszystkie dane
   uart__status_u.txBusyFlag = 0;
 }
 
@@ -196,44 +200,44 @@ void UART__Poll(void)
   {
 
     if(RxBuffer[0] == 49 && RxBuffer[1] == 49)
-      {
-        //jazda_do_przodu();
-        GPIOA->ODR ^= (1 << 5);//toggle green led on PA5
-      }
-      else if(RxBuffer[0] == 49 && RxBuffer[1] == 48)
-      {
-        //skret_w_lewo();
-      }
-      else if(RxBuffer[0] == 50 && RxBuffer[1] == 50)
-      {
-        //jazda_zatrzymana();
-        //PWM wypelnienie 0
+    {
+      MOTORS__jazda_do_przodu();
+      GPIOA->ODR ^= (1 << 5);//toggle green led on PA5
+    }
+    else if(RxBuffer[0] == 49 && RxBuffer[1] == 48)
+    {
+      MOTORS__skret_w_lewo();
+    }
+    else if(RxBuffer[0] == 50 && RxBuffer[1] == 50)
+    {
+      MOTORS__jazda_zatrzymana();
+      //PWM wypelnienie 0
 //        analogWrite(5, 0);
 //        analogWrite(3, 0);
-      }
-      else if(RxBuffer[0] == 50 && RxBuffer[1] == 48)
+    }
+    else if(RxBuffer[0] == 50 && RxBuffer[1] == 48)
+    {
+      MOTORS__skret_w_prawo();
+    }
+    else if(RxBuffer[0] == 50 && RxBuffer[1] == 53)
+    {
+      MOTORS__jazda_do_tylu();
+    }
+    else if(RxBuffer[0] == 37)
+    {
+      //Serial.print("PWM VALUE IS ");
+      //Serial.println(buffor[1], DEC);
+      if(RxBuffer[1] < 195)
       {
-        //skret_w_prawo();
-      }
-      else if(RxBuffer[0] == 50 && RxBuffer[1] == 53)
-      {
-        //jazda_do_tylu();
-      }
-      else if(RxBuffer[0] == 37)
-      {
-        //Serial.print("PWM VALUE IS ");
-        //Serial.println(buffor[1], DEC);
-        if(RxBuffer[1] < 195)
-        {
 //          analogWrite(5, buffor[1]);
 //          analogWrite(3, buffor[1]);
-        }
-        else
-        {
+      }
+      else
+      {
 //          analogWrite(5, 255);
 //          analogWrite(3, 255);
-        }
       }
+    }
 
     uart__status_u.receivedData = 0;
   }

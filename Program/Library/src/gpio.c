@@ -69,23 +69,28 @@ void GPIO__Init(void)
 
 void GPIO__ConfigUART(uint8_t state)
 {
-  /* Enable the peripheral clock of GPIOA */
-   RCC->IOPENR |= RCC_IOPENR_GPIOAEN;
-
-   /* GPIO configuration for USART2 signals */
-   /* (1) Select AF mode (10) on PA2 and PA3 */
-   /* (2) AF4 for USART2 signals */
-   GPIOA->MODER = (GPIOA->MODER & ~(GPIO_MODER_MODE2|GPIO_MODER_MODE3))\
-                  | (GPIO_MODER_MODE2_1 | GPIO_MODER_MODE3_1); /* (1) */
-   GPIOA->AFR[0] = (GPIOA->AFR[0] &~ (0x0000FF00))\
-                   | (4 << (2 * 4)) | (4 << (3 * 4)); /* (2) */
-
 	if(state)
 	{
+	  /* Enable the peripheral clock of GPIOA */
+	     RCC->IOPENR |= RCC_IOPENR_GPIOAEN;
 
+	     /* GPIO configuration for USART2 signals */
+	     /* (1) Select AF mode (10) on PA2 and PA3 */
+	     /* (2) AF4 for USART2 signals */
+	     GPIOA->MODER = (GPIOA->MODER & ~(GPIO_MODER_MODE2|GPIO_MODER_MODE3))\
+	                    | (GPIO_MODER_MODE2_1 | GPIO_MODER_MODE3_1); /* (1) */
+	     GPIOA->AFR[0] = (GPIOA->AFR[0] &~ (0x0000FF00))\
+	                     | (4 << (2 * 4)) | (4 << (3 * 4)); /* (2) */
 	}
 	else
 	{
+     /* Disable the peripheral clock of GPIOA */
+     //->IOPENR &= ~RCC_IOPENR_GPIOAEN;
+     /*Select output mode (01) on GPIOA pin 5 */
+     GPIOA->MODER = (GPIOA->MODER & ~(GPIO_MODER_MODE5))
+              | (GPIO_MODER_MODE5_0); /* (2) */
+     //GPIOA->BSRR = (1 << 5); //set red led on PA5
+     GPIOA->BRR = (1 << 2) | (1 << 3); //output
 
 	}
 }

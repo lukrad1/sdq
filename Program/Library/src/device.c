@@ -1,6 +1,6 @@
   
  /** \file device.c
-* \brief This file contains special Flood device functions.
+* \brief This file contains special device functions.
 *
 * \author Lukasz Radola
 * \date 28.07.15

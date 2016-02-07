@@ -4,7 +4,7 @@
  * \author Lukasz Radola
  * \date 22.05.15
  *
- * \details First template of project in accordance with new Fibaro coding law.
+ * \details
  *
  */
 #ifdef __cplusplus
@@ -26,6 +26,7 @@ extern "C"
 #include "gpio.h"
 #include "adc.h"
 #include "uart.h"
+#include "motors.h"
 /****************************************************************************/
 /*                      DECLARATION AND DEFINITIONS                         */
 /****************************************************************************/
@@ -60,12 +61,10 @@ uint16_t counter = 0;
 
 int main(void)
 {
-  // GPIOA->BSRR = (1<<5); /* Set red led on PA5 */
-  // GPIOA->BRR = (1<<5); /* Switch off red led on PA5 */
 
   /*System_Init(); This function is enabled in startup stm32 file by default*/
   SystemClock_Config();
-  /* Enable SYSCFG Clock */
+  /* Enable SYSCFG Clock - it's required to adc measure, uart and dma */
   RCC->APB2ENR |= (RCC_APB2ENR_SYSCFGEN);
   GPIO__Init();
   SysTick_Config(4000); /* 1ms config */
@@ -74,6 +73,7 @@ int main(void)
   UART__Init(UART__BAUDRATE_9600);
   GPIO__ConfigButton(1);
 
+  MOTORS__jazda_do_przodu();
   //Zezwolenie na przerwanie globalne
   //  __enable_irq(); // po resecie przerwania sa zalaczone z automatu
   /* Infinite loop */
@@ -161,7 +161,7 @@ void SysTick_Handler(void)
 /******************************************************************************/
 
 /**
- * Brief   This function handles EXTI 0 1 interrupt request.
+ * Brief   This function handles EXTI 4-15 interrupt request. It's button handler
  * Param   None
  * Retval  None
  */
@@ -182,18 +182,21 @@ void EXTI4_15_IRQHandler(void)
 }
 
 /**
- * Brief   This function handles DMA1 channel 2 and 3 interrupt request.
+ * Brief   This function handles DMA1 channel 4-7 interrupt request.
  * Param   None
  * Retval  None
  */
 void DMA1_Channel4_5_6_7_IRQHandler(void)
 {
+  // If tx transmission is finished, then clear dma flag and tx busy flag
   if((DMA1->ISR & DMA_ISR_TCIF4) == DMA_ISR_TCIF4)
   {
     DMA1->IFCR = DMA_IFCR_CTCIF4;/* Clear TC flag */
     UART__TxInterrupt();
   }
 
+  // if receive data is finished, then check data, clear flags and start wait for
+  // recieve state again
   else if((DMA1->ISR & DMA_ISR_TCIF5) == DMA_ISR_TCIF5)
   {
     DMA1->IFCR = DMA_IFCR_CTCIF5;/* Clear TC flag */

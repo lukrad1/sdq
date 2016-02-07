@@ -1,5 +1,5 @@
 /** \file adc.c
-* \brief This file contains definitions system clock and timers functions.
+* \brief This file contains definitions adc.
 *
 * \author Lukasz Radola
 * \date 30.06.15

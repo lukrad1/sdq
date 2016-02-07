@@ -87,4 +87,4 @@ void STATEMACHINE__PollFunction(void);
 #ifdef __cplusplus
   }
 #endif
-#endif /* FIBARO_STATE_MACHINE_H_ */
+#endif /* LRADOLA_STATE_MACHINE_H_ */
