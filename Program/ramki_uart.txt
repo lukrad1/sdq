@@ -1,1 +1,2 @@
 02 31 31 0d 0a - jazda do przodu w hex
+02 32 32 0d 0a - stop w hex

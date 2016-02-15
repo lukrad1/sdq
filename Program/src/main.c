@@ -73,7 +73,7 @@ int main(void)
   UART__Init(UART__BAUDRATE_9600);
   GPIO__ConfigButton(1);
 
-  MOTORS__jazda_do_przodu();
+  MOTORS__jazda_zatrzymana();
   //Zezwolenie na przerwanie globalne
   //  __enable_irq(); // po resecie przerwania sa zalaczone z automatu
   /* Infinite loop */
