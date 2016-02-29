@@ -40,7 +40,7 @@
 
 
 #define UART__UART_FCPU 			MAIN__F_CPU /* UART CPU Value */ 				
-#define UART__BAUDRATE_115200		115200
+#define UART__BAUDRATE_19200		19200
 #define UART__BAUDRATE_9600 		9600
 
 

@@ -964,11 +964,11 @@ LPTIM1_IRQHandler                                 src\startup_stm32l053xx.o
 LSI_measured_frequency                            Library\src\rtc.o
 MOTORS__jazda_do_przodu                           Library\src\motors.o
                                                   Library\src\uart.o
-                                                  src\main.o
 MOTORS__jazda_do_tylu                             Library\src\motors.o
                                                   Library\src\uart.o
 MOTORS__jazda_zatrzymana                          Library\src\motors.o
                                                   Library\src\uart.o
+                                                  src\main.o
 MOTORS__skret_w_lewo                              Library\src\motors.o
                                                   Library\src\uart.o
 MOTORS__skret_w_prawo                             Library\src\motors.o

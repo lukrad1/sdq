@@ -70,7 +70,7 @@ int main(void)
   SysTick_Config(4000); /* 1ms config */
   GPIO__ConfigUART(1);
   UART__DMAConfig();
-  UART__Init(UART__BAUDRATE_9600);
+  UART__Init(UART__BAUDRATE_19200);
   GPIO__ConfigButton(1);
 
   MOTORS__jazda_zatrzymana();
@@ -88,6 +88,7 @@ int main(void)
 
     if(counter >= 5000)
     {
+
       ADC__CalcTemperature();
       UART__SetIntTempToSend();
       counter = 0;
@@ -212,6 +213,47 @@ void DMA1_Channel4_5_6_7_IRQHandler(void)
 }
 
 
+
+/**
+  * Brief   This function handles ADC interrupt request.
+  *         It stores the data register while EOC occurs.
+  *         It reinitializes the CurrentChannel at the End of Sequence
+  *         In case of Overrun, the ADC is stopped but not disabled,
+  *         and the AD conversion is resumed until the USER button is pressed
+  * Param   None
+  * Retval  None
+  */
+void ADC1_COMP_IRQHandler(void)
+{
+  if ((ADC1->ISR & (ADC_ISR_EOC | ADC_ISR_EOSEQ | ADC_ISR_OVR)) == 0) /* Check if one the expected flag is set */
+  {
+    error |= ERROR_UNEXPECTED_ADC_IT; /* Report an error */
+  }
+  else
+  {
+    if ((ADC1->ISR & ADC_ISR_OVR) != 0)  /* Check OVR has triggered the IT */
+    {
+      GPIOB->BSRR = (1<<5); /* Switch off green led to report it is due to overrun  */
+      ADC1->ISR |= ADC_ISR_EOC | ADC_ISR_EOSEQ | ADC_ISR_OVR; /* Clear all pending flags */
+      ADC1->CR |= ADC_CR_ADSTP; /* Stop the sequence conversion */
+      /* the data in the DR is considered as not valid */
+    }
+    else
+    {
+      if ((ADC1->ISR & ADC_ISR_EOC) != 0)  /* Check EOC has triggered the IT */
+      {
+        ADC_array[CurrentChannel] = ADC1->DR; /* Read data and clears EOC flag */
+        CurrentChannel++;  /* Increment the index on ADC_array */
+      }
+      if ((ADC1->ISR & ADC_ISR_EOSEQ) != 0)  /* Check EOSEQ has triggered the IT */
+      {
+        ADC1->ISR |= ADC_ISR_EOSEQ; /* Clear the pending bit */
+        CurrentChannel = 0; /* Reinitialize the CurrentChannel */
+        GPIOB->ODR ^= (1<<5); /* Toggle green led on PB4 */
+      }
+    }
+  }
+}
 #ifdef __cplusplus
 }
 #endif

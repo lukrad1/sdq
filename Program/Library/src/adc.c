@@ -93,6 +93,81 @@ static void adc__Init(void)
   /* (1) Enable the peripheral clock of the ADC and SYSCFG */
     RCC->APB2ENR |= RCC_APB2ENR_ADC1EN | RCC_APB2ENR_SYSCFGEN; /* (1) */
 
+    /* ConfigureADC */
+
+       /* (5) Wake-up the Temperature sensor (only for VLCD, Temp sensor and VRefInt) */
+       /* (6) Enable Sensor buffer  for ADC by setting both  ENBUF_SENSOR_ADC bit
+             and EN_VREFINT in SYSCFG_CFGR3 */
+       /* (7) Wait for SENSOR ADC buffer ready */
+
+
+
+       SYSCFG->CFGR3 |= SYSCFG_CFGR3_ENBUF_SENSOR_ADC | SYSCFG_CFGR3_EN_VREFINT; /* (6) */
+       while ((SYSCFG->CFGR3 & SYSCFG_CFGR3_SENSOR_ADC_RDYF) == 0) /* (7) */
+       {
+        /* For robust implementation, add here time-out management */
+       }
+
+       /* (1) Select HSI16 by writing 00 in CKMODE (reset value) */
+         /* (2) Select the continuous mode and scanning direction */
+         /* (3) Select CHSEL10, CHSEL17 and CHSEL18, Select CHSEL18 for temperature sensor  */
+         /* (4) Select a sampling mode of 111 i.e. 239.5 ADC clk to be greater than 5 us */
+         /* (5) Enable interrupts on EOC, EOSEQ and overrrun */
+         /* (6) Wake-up the VREFINT (only for VLCD, Temp sensor and VRefInt) */
+         /* (7) Enable VREFINT buffer  for ADC by setting EN_VREFINT and
+                ENBUF_VREFINT_ADC bit in SYSCFG_CFGR3 and Enable Sensor buffer
+                for ADC by setting both  ENBUF_SENSOR_ADC bit */
+         /* (8) Wait for VREFINT ADC buffer ready */
+         //ADC1->CFGR2 &= ~ADC_CFGR2_CKMODE; /* (1) */
+         ADC1->CFGR1 |= ADC_CFGR1_WAIT |ADC_CFGR1_CONT | ADC_CFGR1_SCANDIR; /* (2) */
+         ADC1->CHSELR = ADC_CHSELR_CHSEL10 \
+                      | ADC_CHSELR_CHSEL17 | ADC_CHSELR_CHSEL18; /* (3) */
+         ADC1->SMPR |= ADC_SMPR_SMP_0 | ADC_SMPR_SMP_1 | ADC_SMPR_SMP_2; /* (4) */
+         ADC1->IER = ADC_IER_EOCIE | ADC_IER_EOSEQIE | ADC_IER_OVRIE; /* (5) */
+         ADC->CCR |= ADC_CCR_VREFEN | ADC_CCR_TSEN;  /* (6) */
+         SYSCFG->CFGR3 |= SYSCFG_CFGR3_EN_VREFINT
+                        | SYSCFG_CFGR3_ENBUF_VREFINT_ADC
+                        | SYSCFG_CFGR3_ENBUF_SENSOR_ADC;/* (7) */
+         while ((SYSCFG->CFGR3 & SYSCFG_CFGR3_VREFINT_ADC_RDYF
+                               | SYSCFG_CFGR3_SENSOR_ADC_RDYF) == 0) /* (8) */
+         {
+           /* For robust implementation, add here time-out management */
+         }
+
+         /* Configure NVIC for ADC */
+         /* (1) Enable Interrupt on ADC */
+         /* (2) Set priority for ADC */
+         NVIC_EnableIRQ(ADC1_COMP_IRQn); /* (1) */
+         NVIC_SetPriority(ADC1_COMP_IRQn,0); /* (2) */
+
+       /* Calibrate ADC */
+        /* (1) Ensure that ADEN = 0 */
+        /* (2) Clear ADEN */
+        /* (3) Set ADCAL=1 */
+        /* (4) Wait until EOCAL=1 */
+        /* (5) Clear EOCAL */
+        if ((ADC1->CR & ADC_CR_ADEN) != 0) /* (1) */
+        {
+         ADC1->CR &= (uint32_t)(~ADC_CR_ADEN);  /* (2) */
+        }
+        ADC1->CR |= ADC_CR_ADCAL; /* (3) */
+        while ((ADC1->ISR & ADC_ISR_EOCAL) == 0) /* (4) */
+        {
+         /* For robust implementation, add here time-out management */
+        }
+        ADC1->ISR |= ADC_ISR_EOCAL; /* (5) */
+
+
+        /* (1) Enable the ADC */
+       /* (2) Wait until ADC ready if AUTOFF is not set */
+       ADC1->CR |= ADC_CR_ADEN; /* (1) */
+       if ((ADC1->CFGR1 &  ADC_CFGR1_AUTOFF) == 0)
+       {
+        while ((ADC1->ISR & ADC_ISR_ADRDY) == 0) /* (2) */
+        {
+          /* For robust implementation, add here time-out management */
+        }
+       }
 
 
 }
@@ -107,54 +182,8 @@ static void adc__Init(void)
 */
 static void adc__MeasureTemp(void)
 {
-  /* ConfigureADC */
-    /* (1) Select HSI16 by writing 00 in CKMODE (reset value) */
-    /* (2) Select auto off mode */
-    /* (3) Select CHSEL18 for temperature sensor */
-    /* (4) Select a sampling mode of 111 i.e. 239.5 ADC clk to be greater than 2.2us */
-    /* (5) Wake-up the Temperature sensor (only for VLCD, Temp sensor and VRefInt) */
-    /* (6) Enable Sensor buffer  for ADC by setting both  ENBUF_SENSOR_ADC bit
-          and EN_VREFINT in SYSCFG_CFGR3 */
-    /* (7) Wait for SENSOR ADC buffer ready */
-    //ADC1->CFGR2 &= ~ADC_CFGR2_CKMODE; /* (1) */
-    ADC1->CFGR1 |= ADC_CFGR1_AUTOFF; /* (2) */
-    ADC1->CHSELR = ADC_CHSELR_CHSEL18; /* (3) */
-    ADC1->SMPR |=  ADC_SMPR_SMPR; /* (4) */
-    ADC->CCR |= ADC_CCR_TSEN; /* (5) */
-    SYSCFG->CFGR3 |= SYSCFG_CFGR3_ENBUF_SENSOR_ADC | SYSCFG_CFGR3_EN_VREFINT; /* (6) */
-    while ((SYSCFG->CFGR3 & SYSCFG_CFGR3_SENSOR_ADC_RDYF) == 0) /* (7) */
-    {
-     /* For robust implementation, add here time-out management */
-    }
-
-    /* Calibrate ADC */
-    /* (1) Ensure that ADEN = 0 */
-    /* (2) Clear ADEN */
-    /* (3) Set ADCAL=1 */
-    /* (4) Wait until EOCAL=1 */
-    /* (5) Clear EOCAL */
-    if ((ADC1->CR & ADC_CR_ADEN) != 0) /* (1) */
-    {
-     ADC1->CR &= (uint32_t)(~ADC_CR_ADEN);  /* (2) */
-    }
-    ADC1->CR |= ADC_CR_ADCAL; /* (3) */
-    while ((ADC1->ISR & ADC_ISR_EOCAL) == 0) /* (4) */
-    {
-     /* For robust implementation, add here time-out management */
-    }
-    ADC1->ISR |= ADC_ISR_EOCAL; /* (5) */
 
 
-    /* (1) Enable the ADC */
-    /* (2) Wait until ADC ready if AUTOFF is not set */
-    ADC1->CR |= ADC_CR_ADEN; /* (1) */
-    if ((ADC1->CFGR1 &  ADC_CFGR1_AUTOFF) == 0)
-    {
-     while ((ADC1->ISR & ADC_ISR_ADRDY) == 0) /* (2) */
-     {
-       /* For robust implementation, add here time-out management */
-     }
-    }
     ADC1->CR |= ADC_CR_ADSTART; /* start the ADC conversion */
     while ((ADC1->ISR & ADC_ISR_EOC) == 0); /* Wait end of conversion */
 }
@@ -251,6 +280,23 @@ int32_t ADC__CalcTemperature(void)
 
 /******************************* END FUNCTION *********************************/
 
+void ADC__MeasureAllAdc(void)
+{
+
+  if ((ADC1->CR & ADC_CR_ADSTART) != 0) /* Check if conversion on going */
+  {
+    ADC1->CR |= ADC_CR_ADSTP; /* Stop the sequence conversion */
+    GPIOA->BSRR = (1<<5); /* Switch on red led to report a resume of the conversion  */
+    GPIOB->BSRR = (1<<4); /* Switch on the green led */
+  }
+  else
+  {
+    ADC1->CFGR1 ^= ADC_CFGR1_SCANDIR;  /* Toggle SCANDIR */
+    CurrentChannel = 0;
+    ADC1->CR |= ADC_CR_ADSTART; /* Restart the sequence conversion */
+  }
+
+}
 
 
 #ifdef __cplusplus
