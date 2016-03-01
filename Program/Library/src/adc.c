@@ -32,9 +32,7 @@
 static volatile struct
 {
 	uint8_t isInitiated : 1;    /*!< Did ADC initialization make? */
-	uint8_t dummyConversionInitiated : 1;  /*!< Did Dummy Conversion make?*/
 	uint8_t vrefInitiated : 1;  /*!< Did Vref initialization make?*/
-
   uint8_t measure_flag : 1;
   
 	uint16_t vref_adc;    /*!< Vref value in ADC */
@@ -46,6 +44,7 @@ static volatile struct
   uint32_t EE_Vref;
 } adc__data_s = {0};
 
+
 /****************************************************************************/
 /*                         GLOBAL VARIABLE DECLARATION                      */
 /****************************************************************************/
@@ -53,6 +52,8 @@ static volatile struct
 /* Global variable declaration */
 int32_t temperature_C; //contains the computed temperature
 
+uint16_t ADC_array[NUMBER_OF_ADC_CHANNEL]; //Array to store the values coming from the ADC and copied by DMA
+uint32_t CurrentChannel; //index on the ADC_array
 /****************************************************************************/
 /*                  FUNCTIONS DECLARATIONS AND DEFINITIONS                  */
 /****************************************************************************/
@@ -61,21 +62,6 @@ int32_t temperature_C; //contains the computed temperature
 /* ... */
 /* Functions definitions (1. Static functions 2. Local exported functions */
 /* 3. Interface (exported) functions) */
-
-
-/**
-* \brief Dummy Conversion function.
-*
-* This function makes dummy adc conversion. It is required to measure adc correctly.  
-* 
-*/
-
-static void adc__DummyConversion(void)
-{
-
-	adc__data_s.dummyConversionInitiated = 1;
-}
-
 
 
 /******************************* END FUNCTION *********************************/
@@ -94,19 +80,6 @@ static void adc__Init(void)
     RCC->APB2ENR |= RCC_APB2ENR_ADC1EN | RCC_APB2ENR_SYSCFGEN; /* (1) */
 
     /* ConfigureADC */
-
-       /* (5) Wake-up the Temperature sensor (only for VLCD, Temp sensor and VRefInt) */
-       /* (6) Enable Sensor buffer  for ADC by setting both  ENBUF_SENSOR_ADC bit
-             and EN_VREFINT in SYSCFG_CFGR3 */
-       /* (7) Wait for SENSOR ADC buffer ready */
-
-
-
-       SYSCFG->CFGR3 |= SYSCFG_CFGR3_ENBUF_SENSOR_ADC | SYSCFG_CFGR3_EN_VREFINT; /* (6) */
-       while ((SYSCFG->CFGR3 & SYSCFG_CFGR3_SENSOR_ADC_RDYF) == 0) /* (7) */
-       {
-        /* For robust implementation, add here time-out management */
-       }
 
        /* (1) Select HSI16 by writing 00 in CKMODE (reset value) */
          /* (2) Select the continuous mode and scanning direction */
@@ -158,7 +131,7 @@ static void adc__Init(void)
         ADC1->ISR |= ADC_ISR_EOCAL; /* (5) */
 
 
-        /* (1) Enable the ADC */
+       /* (1) Enable the ADC */
        /* (2) Wait until ADC ready if AUTOFF is not set */
        ADC1->CR |= ADC_CR_ADEN; /* (1) */
        if ((ADC1->CFGR1 &  ADC_CFGR1_AUTOFF) == 0)
@@ -168,6 +141,8 @@ static void adc__Init(void)
           /* For robust implementation, add here time-out management */
         }
        }
+
+       adc__data_s.isInitiated = 1;
 
 
 }
@@ -182,8 +157,6 @@ static void adc__Init(void)
 */
 static void adc__MeasureTemp(void)
 {
-
-
     ADC1->CR |= ADC_CR_ADSTART; /* start the ADC conversion */
     while ((ADC1->ISR & ADC_ISR_EOC) == 0); /* Wait end of conversion */
 }
@@ -258,6 +231,7 @@ void ADC__DeInit(void)
     /* For robust implementation, add here time-out management */
   }
 
+  adc__data_s.isInitiated = 0;
 }
 
 /******************************* END FUNCTION *********************************/
@@ -282,12 +256,10 @@ int32_t ADC__CalcTemperature(void)
 
 void ADC__MeasureAllAdc(void)
 {
-
+  adc__Init();
   if ((ADC1->CR & ADC_CR_ADSTART) != 0) /* Check if conversion on going */
   {
     ADC1->CR |= ADC_CR_ADSTP; /* Stop the sequence conversion */
-    GPIOA->BSRR = (1<<5); /* Switch on red led to report a resume of the conversion  */
-    GPIOB->BSRR = (1<<4); /* Switch on the green led */
   }
   else
   {
@@ -298,6 +270,39 @@ void ADC__MeasureAllAdc(void)
 
 }
 
+/*
+ void ADC__Measure(ADC__conversionType_e_t conversionType)
+  {
+    uint32_t buffer = 0;
+    uint8_t i;
+
+    if(adc__data_s.isInitiated == 0)
+    {
+      ADC__Init();
+    }
+
+    switch(conversionType)
+    {
+    default:
+      break;
+
+    case adc__CONVTYPE_BATTERY:
+      adc__MeasureBatt();
+      break;
+
+    case adc__CONVTYPE_CO:
+      adc__MeasureCO();
+      break;
+
+    case adc__CONVTYPE_VOLTREF:
+      adc__MeasureVref();
+      break;
+
+    case adc__CONVTYPE_TEMPERATURE:
+      adc__MeasureTemp();
+      break;
+    }
+  }*/
 
 #ifdef __cplusplus
   }

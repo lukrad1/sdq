@@ -128,7 +128,7 @@ read from this memory after the peripheral event.*/
    /* Configure IT */
    /* (10) Set priority for DMA1_Channel2_3_IRQn */
    /* (11) Enable DMA1_Channel2_3_IRQn */
-   NVIC_SetPriority(DMA1_Channel4_5_6_7_IRQn, 0); /* (10) */
+   NVIC_SetPriority(DMA1_Channel4_5_6_7_IRQn, 1); /* (10) */
    NVIC_EnableIRQ(DMA1_Channel4_5_6_7_IRQn); /* (11) */
 
 }
