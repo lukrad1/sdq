@@ -49,6 +49,8 @@ int16_t ADC__CalcTemperature(void);
  /*! Special adress which contain Vref calibrate value */
 #define NUMBER_OF_ADC_CHANNEL 3
 
+
+#define ERROR_UNEXPECTED_ADC_IT 0x01
 /* Typedef definition */
 
 
@@ -102,6 +104,7 @@ uint16_t ADC__CalcBattery(void);
 */
 int32_t ADC__CalcTemperature(void);
 
+void ADC__MeasureAllAdc(void);
 
 #ifdef __cplusplus
   }

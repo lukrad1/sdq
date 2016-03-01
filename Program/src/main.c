@@ -27,6 +27,7 @@ extern "C"
 #include "adc.h"
 #include "uart.h"
 #include "motors.h"
+
 /****************************************************************************/
 /*                      DECLARATION AND DEFINITIONS                         */
 /****************************************************************************/
@@ -44,6 +45,7 @@ extern "C"
 
 volatile uint8_t flag_1ms = 0;
 uint16_t counter = 0;
+volatile uint16_t error = 0;  //initialized at 0 and modified by the functions
 /****************************************************************************/
 /*                  FUNCTIONS DECLARATIONS AND DEFINITIONS                  */
 /****************************************************************************/
@@ -89,7 +91,7 @@ int main(void)
     if(counter >= 5000)
     {
 
-      ADC__CalcTemperature();
+      //ADC__CalcTemperature();
       UART__SetIntTempToSend();
       counter = 0;
     }
@@ -226,6 +228,9 @@ void DMA1_Channel4_5_6_7_IRQHandler(void)
   */
 void ADC1_COMP_IRQHandler(void)
 {
+  int8_t data[4];
+  int8_t i = 0;
+
   if ((ADC1->ISR & (ADC_ISR_EOC | ADC_ISR_EOSEQ | ADC_ISR_OVR)) == 0) /* Check if one the expected flag is set */
   {
     error |= ERROR_UNEXPECTED_ADC_IT; /* Report an error */
@@ -246,8 +251,13 @@ void ADC1_COMP_IRQHandler(void)
         ADC_array[CurrentChannel] = ADC1->DR; /* Read data and clears EOC flag */
 
         sprintf(data, "%d", (int)ADC_array[CurrentChannel]);
-        UART__StartDmaTransmision(data, 2);
+        UART__StartDmaTransmision(data, 4);
         CurrentChannel++;  /* Increment the index on ADC_array */
+        for(i = 0; i < 4; i++)
+        {
+
+          data[i] = 0;
+        }
 
       }
       if ((ADC1->ISR & ADC_ISR_EOSEQ) != 0)  /* Check EOSEQ has triggered the IT */

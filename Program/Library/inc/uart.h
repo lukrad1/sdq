@@ -83,7 +83,7 @@ void UART__RxInterrupt();
 void UART__TxInterrupt(void);
 // Pozostale funkcje
 void UART__DMAConfig(void);
-void UART__StartDmaTransmision(uint8_t* data, uint8_t length);
+void UART__StartDmaTransmision(int8_t* data, uint8_t length);
 void UART__SetIntTempToSend(void);
 #ifdef __cplusplus
   }

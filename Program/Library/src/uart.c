@@ -133,7 +133,7 @@ read from this memory after the peripheral event.*/
 
 }
 
-void UART__StartDmaTransmision(uint8_t* data, uint8_t length)
+void UART__StartDmaTransmision(int8_t* data, uint8_t length)
 {
   int i;
   length += 2; // na znak konca lini
@@ -194,7 +194,7 @@ void UART__TxInterrupt(void)
 
 void UART__Poll(void)
 {
-  uint8_t data[4];
+  int8_t data[4];
 
   if(uart__status_u.receivedData)
   {

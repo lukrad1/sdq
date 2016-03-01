@@ -94,15 +94,16 @@ static void adc__Init(void)
          //ADC1->CFGR2 &= ~ADC_CFGR2_CKMODE; /* (1) */
          ADC1->CFGR1 |= ADC_CFGR1_WAIT |ADC_CFGR1_CONT | ADC_CFGR1_SCANDIR; /* (2) */
          ADC1->CHSELR = ADC_CHSELR_CHSEL10 \
-                      | ADC_CHSELR_CHSEL17 | ADC_CHSELR_CHSEL18; /* (3) */
-         ADC1->SMPR |= ADC_SMPR_SMP_0 | ADC_SMPR_SMP_1 | ADC_SMPR_SMP_2; /* (4) */
+                      | ADC_CHSELR_CHSEL11 | ADC_CHSELR_CHSEL17; /* (3) */
+         ADC1->SMPR |= ADC_SMPR_SMPR_0 | ADC_SMPR_SMPR_1 | ADC_SMPR_SMPR_2; /* (4) */
          ADC1->IER = ADC_IER_EOCIE | ADC_IER_EOSEQIE | ADC_IER_OVRIE; /* (5) */
          ADC->CCR |= ADC_CCR_VREFEN | ADC_CCR_TSEN;  /* (6) */
          SYSCFG->CFGR3 |= SYSCFG_CFGR3_EN_VREFINT
                         | SYSCFG_CFGR3_ENBUF_VREFINT_ADC
                         | SYSCFG_CFGR3_ENBUF_SENSOR_ADC;/* (7) */
-         while ((SYSCFG->CFGR3 & SYSCFG_CFGR3_VREFINT_ADC_RDYF
-                               | SYSCFG_CFGR3_SENSOR_ADC_RDYF) == 0) /* (8) */
+         while ((SYSCFG->CFGR3 & SYSCFG_VREFINT_ADC_RDYF &&
+                 SYSCFG->CFGR3 & SYSCFG_CFGR3_SENSOR_ADC_RDYF) == 0) /* (8) */
+
          {
            /* For robust implementation, add here time-out management */
          }
@@ -256,16 +257,22 @@ int32_t ADC__CalcTemperature(void)
 
 void ADC__MeasureAllAdc(void)
 {
-  adc__Init();
-  if ((ADC1->CR & ADC_CR_ADSTART) != 0) /* Check if conversion on going */
+  if(!adc__data_s.isInitiated)
   {
-    ADC1->CR |= ADC_CR_ADSTP; /* Stop the sequence conversion */
+    adc__Init();
   }
   else
   {
-    ADC1->CFGR1 ^= ADC_CFGR1_SCANDIR;  /* Toggle SCANDIR */
-    CurrentChannel = 0;
-    ADC1->CR |= ADC_CR_ADSTART; /* Restart the sequence conversion */
+    if ((ADC1->CR & ADC_CR_ADSTART) != 0) /* Check if conversion on going */
+    {
+      ADC1->CR |= ADC_CR_ADSTP; /* Stop the sequence conversion */
+    }
+    else
+    {
+      ADC1->CFGR1 ^= ADC_CFGR1_SCANDIR;  /* Toggle SCANDIR */
+      CurrentChannel = 0;
+      ADC1->CR |= ADC_CR_ADSTART; /* Restart the sequence conversion */
+    }
   }
 
 }
