@@ -44,9 +44,10 @@ int16_t ADC__CalcTemperature(void);
 #define TEMP30_CAL_ADDR ((uint16_t*) ((uint32_t) 0x1FF8007A))
 #define VDD_CALIB ((uint16_t) (300))
 #define VDD_APPLI ((uint16_t) (326))
-
+/* Internal voltage reference calibration value address */
+#define VREFINT_CAL_ADDR ((uint16_t*) ((uint32_t) 0x1FF80078))
  /*! Special adress which contain Vref calibrate value */
-
+#define NUMBER_OF_ADC_CHANNEL 3
 
 /* Typedef definition */
 
@@ -58,6 +59,8 @@ int16_t ADC__CalcTemperature(void);
 /* Global variable declaration - use it isn't recommended*/
 
 extern int32_t temperature_C; //contains the computed temperature
+extern uint16_t ADC_array[]; //Array to store the values coming from the ADC and copied by DMA
+extern uint32_t CurrentChannel; //index on the ADC_array
 /****************************************************************************/
 /*                  FUNCTIONS DECLARATIONS AND DEFINITIONS                  */
 /****************************************************************************/

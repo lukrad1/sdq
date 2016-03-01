@@ -176,6 +176,7 @@ void EXTI4_15_IRQHandler(void)
     // zerujemy flage przerwania ale UWAGA!!! Tutaj zerujemy ja JEDYNKA, a nie zerem !!!!
     EXTI->PR |= EXTI_PR_PR13;
 
+    ADC__MeasureAllAdc();
     GPIOA->ODR ^= (1 << 5);//toggle green led on PA5
     UART__StartDmaTransmision(data, 3);
 
@@ -243,12 +244,17 @@ void ADC1_COMP_IRQHandler(void)
       if ((ADC1->ISR & ADC_ISR_EOC) != 0)  /* Check EOC has triggered the IT */
       {
         ADC_array[CurrentChannel] = ADC1->DR; /* Read data and clears EOC flag */
+
+        sprintf(data, "%d", (int)ADC_array[CurrentChannel]);
+        UART__StartDmaTransmision(data, 2);
         CurrentChannel++;  /* Increment the index on ADC_array */
+
       }
       if ((ADC1->ISR & ADC_ISR_EOSEQ) != 0)  /* Check EOSEQ has triggered the IT */
       {
         ADC1->ISR |= ADC_ISR_EOSEQ; /* Clear the pending bit */
         CurrentChannel = 0; /* Reinitialize the CurrentChannel */
+        ADC__DeInit();
         GPIOB->ODR ^= (1<<5); /* Toggle green led on PB4 */
       }
     }
