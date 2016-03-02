@@ -19,7 +19,7 @@
 #include "stm32l0xx.h"
 #include "gpio.h"
 #include "adc.h"
-
+#include "uart.h"
 /****************************************************************************/
 /*                      DECLARATION AND DEFINITIONS                         */
 /****************************************************************************/
@@ -34,11 +34,12 @@ static volatile struct
 	uint8_t isInitiated : 1;    /*!< Did ADC initialization make? */
 	uint8_t vrefInitiated : 1;  /*!< Did Vref initialization make?*/
   uint8_t measure_flag : 1;
-  
-	uint16_t vref_adc;    /*!< Vref value in ADC */
-	uint16_t vref_mv;     /*!< Vref value in [mV] */
-	uint16_t temp_adc;    /*!< Temperature value in ADC */
-	int16_t temp_degree;  /*!< Temperature value in [mV] */
+  uint8_t is_conversion : 1;
+	uint32_t vref_adc;    /*!< Vref value in ADC */
+	uint32_t vref_mv;     /*!< Vref value in [mV] */
+	int32_t temp_adc;    /*!< Temperature value in ADC */
+	int32_t temp_degree;  /*!< Temperature value in [mV] */
+	uint32_t sharp1_adc;
 	uint16_t batt_mv;     /*!< Battery value in [mV] */
   
   uint32_t EE_Vref;
@@ -50,9 +51,8 @@ static volatile struct
 /****************************************************************************/
 
 /* Global variable declaration */
-int32_t temperature_C; //contains the computed temperature
 
-uint16_t ADC_array[NUMBER_OF_ADC_CHANNEL]; //Array to store the values coming from the ADC and copied by DMA
+int32_t ADC_array[NUMBER_OF_ADC_CHANNEL]; //Array to store the values coming from the ADC and copied by DMA
 uint32_t CurrentChannel; //index on the ADC_array
 /****************************************************************************/
 /*                  FUNCTIONS DECLARATIONS AND DEFINITIONS                  */
@@ -94,7 +94,7 @@ static void adc__Init(void)
          //ADC1->CFGR2 &= ~ADC_CFGR2_CKMODE; /* (1) */
          ADC1->CFGR1 |= ADC_CFGR1_WAIT |ADC_CFGR1_CONT | ADC_CFGR1_SCANDIR; /* (2) */
          ADC1->CHSELR = ADC_CHSELR_CHSEL10 \
-                      | ADC_CHSELR_CHSEL11 | ADC_CHSELR_CHSEL17; /* (3) */
+                      | ADC_CHSELR_CHSEL17 | ADC_CHSELR_CHSEL18; /* (3) */
          ADC1->SMPR |= ADC_SMPR_SMPR_0 | ADC_SMPR_SMPR_1 | ADC_SMPR_SMPR_2; /* (4) */
          ADC1->IER = ADC_IER_EOCIE | ADC_IER_EOSEQIE | ADC_IER_OVRIE; /* (5) */
          ADC->CCR |= ADC_CCR_VREFEN | ADC_CCR_TSEN;  /* (6) */
@@ -145,22 +145,8 @@ static void adc__Init(void)
 
        adc__data_s.isInitiated = 1;
 
-
 }
 
-/******************************* END FUNCTION *********************************/
-
-/**
-* \brief ADC temperature measured function.
-*
-* This function measures temperature value in ADC. Other function converts adc 
-* value into Celsius degree. All results are saving into adc_data_s.
-*/
-static void adc__MeasureTemp(void)
-{
-    ADC1->CR |= ADC_CR_ADSTART; /* start the ADC conversion */
-    while ((ADC1->ISR & ADC_ISR_EOC) == 0); /* Wait end of conversion */
-}
 
 /******************************* END FUNCTION *********************************/
 
@@ -196,18 +182,6 @@ static int32_t adc__ConvertTemperature(int32_t measure)
   return(temperature);
 }
 
-/******************************* END FUNCTION *********************************/
-
-/**
-* \brief ADC Reference Voltage measured function.
-*
-* This function measures Reference Voltage and converts it to mV. All results are
-* saved into adc_data_s.
-*/
-static void adc__MeasureVref(void)
-{
-  
-}
 
 /******************************* END FUNCTION *********************************/
 
@@ -235,23 +209,6 @@ void ADC__DeInit(void)
   adc__data_s.isInitiated = 0;
 }
 
-/******************************* END FUNCTION *********************************/
-
-uint16_t ADC__CalcBattery(void)
-{
-
-}
-
-/******************************* END FUNCTION *********************************/
-
-int32_t ADC__CalcTemperature(void)
-{
-  adc__Init();
-  adc__MeasureTemp();
-  temperature_C = adc__ConvertTemperature((int32_t) ADC1->DR);
-  ADC__DeInit();
-  return temperature_C;
-}
 
 /******************************* END FUNCTION *********************************/
 
@@ -261,7 +218,8 @@ void ADC__MeasureAllAdc(void)
   {
     adc__Init();
   }
-  else
+
+  if(adc__data_s.isInitiated)
   {
     if ((ADC1->CR & ADC_CR_ADSTART) != 0) /* Check if conversion on going */
     {
@@ -273,8 +231,57 @@ void ADC__MeasureAllAdc(void)
       CurrentChannel = 0;
       ADC1->CR |= ADC_CR_ADSTART; /* Restart the sequence conversion */
     }
+
   }
 
+}
+
+/******************************* END FUNCTION *********************************/
+
+void ADC__UpdateAdcStruct(int32_t* data)
+{
+
+    adc__data_s.sharp1_adc = data[0];
+    adc__data_s.vref_adc = data[1];
+    adc__data_s.temp_adc = data[2];
+    adc__data_s.temp_degree = adc__ConvertTemperature(adc__data_s.temp_adc);
+
+    UART__SetSharp1ToSend();
+    UART__SetVrefToSend();
+    UART__SetIntTempToSend();
+
+}
+
+/******************************* END FUNCTION *********************************/
+
+int32_t ADC__GetSharp1AdcValue(void)
+{
+
+  return adc__data_s.sharp1_adc;
+}
+
+/******************************* END FUNCTION *********************************/
+
+int32_t ADC__GetVrefAdcValue(void)
+{
+
+  return adc__data_s.vref_adc;
+}
+
+/******************************* END FUNCTION *********************************/
+
+int32_t ADC__GetTempAdcValue(void)
+{
+
+  return adc__data_s.temp_adc;
+}
+
+/******************************* END FUNCTION *********************************/
+
+int32_t ADC__GetTempDegreeValue(void)
+{
+
+  return adc__data_s.temp_degree;
 }
 
 /*

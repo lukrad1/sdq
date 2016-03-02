@@ -41,6 +41,8 @@ static volatile union uart__status_u
     uint8_t rxBusyFlag: 1;
     uint8_t receivedData: 1;
     uint8_t sendInternalTemp: 1;
+    uint8_t sendSharp1:1;
+    uint8_t sendVrefValue:1;
     uint8_t flag5: 1;
     uint8_t fullTransmision: 1;
     uint8_t flag7: 1;
@@ -249,14 +251,33 @@ void UART__Poll(void)
 
       uart__status_u.sendInternalTemp = 0;
 
-      sprintf(data, "%d", (int)temperature_C);
+      sprintf(data, "%d", (int)ADC__GetTempDegreeValue());
 
 
       UART__StartDmaTransmision(data, 2);
       UART__StartDmaTransmision("*C", 2);
 
     }
-  }
+    else if(uart__status_u.sendSharp1)
+    {
+
+      uart__status_u.sendSharp1 = 0;
+
+      sprintf(data, "%d", (int)ADC__GetSharp1AdcValue());
+      UART__StartDmaTransmision(data, 4);
+     // UART__StartDmaTransmision("Sharp1", 6);
+
+    }
+    else if(uart__status_u.sendVrefValue)
+    {
+      uart__status_u.sendVrefValue = 0;
+
+      sprintf(data, "%d", (int)ADC__GetVrefAdcValue());
+      UART__StartDmaTransmision(data, 4);
+    //  UART__StartDmaTransmision("Vref", 4);
+
+    }
+   }
 
 }
 
@@ -269,6 +290,22 @@ void UART__SetIntTempToSend(void)
 }
 
 /******************************* END FUNCTION *********************************/
+
+void UART__SetSharp1ToSend(void)
+{
+  uart__status_u.sendSharp1 = 1;
+}
+
+/******************************* END FUNCTION *********************************/
+
+void UART__SetVrefToSend(void)
+{
+  uart__status_u.sendVrefValue = 1;
+}
+
+/******************************* END FUNCTION *********************************/
+
+
 
 
 #ifdef __cplusplus

@@ -91,8 +91,7 @@ int main(void)
     if(counter >= 5000)
     {
 
-      //ADC__CalcTemperature();
-      UART__SetIntTempToSend();
+      ADC__MeasureAllAdc();
       counter = 0;
     }
 
@@ -178,7 +177,7 @@ void EXTI4_15_IRQHandler(void)
     // zerujemy flage przerwania ale UWAGA!!! Tutaj zerujemy ja JEDYNKA, a nie zerem !!!!
     EXTI->PR |= EXTI_PR_PR13;
 
-    ADC__MeasureAllAdc();
+
     GPIOA->ODR ^= (1 << 5);//toggle green led on PA5
     UART__StartDmaTransmision(data, 3);
 
@@ -228,9 +227,6 @@ void DMA1_Channel4_5_6_7_IRQHandler(void)
   */
 void ADC1_COMP_IRQHandler(void)
 {
-  int8_t data[4];
-  int8_t i = 0;
-
   if ((ADC1->ISR & (ADC_ISR_EOC | ADC_ISR_EOSEQ | ADC_ISR_OVR)) == 0) /* Check if one the expected flag is set */
   {
     error |= ERROR_UNEXPECTED_ADC_IT; /* Report an error */
@@ -249,21 +245,14 @@ void ADC1_COMP_IRQHandler(void)
       if ((ADC1->ISR & ADC_ISR_EOC) != 0)  /* Check EOC has triggered the IT */
       {
         ADC_array[CurrentChannel] = ADC1->DR; /* Read data and clears EOC flag */
-
-        sprintf(data, "%d", (int)ADC_array[CurrentChannel]);
-        UART__StartDmaTransmision(data, 4);
         CurrentChannel++;  /* Increment the index on ADC_array */
-        for(i = 0; i < 4; i++)
-        {
-
-          data[i] = 0;
-        }
 
       }
       if ((ADC1->ISR & ADC_ISR_EOSEQ) != 0)  /* Check EOSEQ has triggered the IT */
       {
         ADC1->ISR |= ADC_ISR_EOSEQ; /* Clear the pending bit */
         CurrentChannel = 0; /* Reinitialize the CurrentChannel */
+        ADC__UpdateAdcStruct(ADC_array);
         ADC__DeInit();
         GPIOB->ODR ^= (1<<5); /* Toggle green led on PB4 */
       }

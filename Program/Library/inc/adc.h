@@ -60,8 +60,7 @@ int16_t ADC__CalcTemperature(void);
 
 /* Global variable declaration - use it isn't recommended*/
 
-extern int32_t temperature_C; //contains the computed temperature
-extern uint16_t ADC_array[]; //Array to store the values coming from the ADC and copied by DMA
+extern int32_t ADC_array[]; //Array to store the values coming from the ADC and copied by DMA
 extern uint32_t CurrentChannel; //index on the ADC_array
 /****************************************************************************/
 /*                  FUNCTIONS DECLARATIONS AND DEFINITIONS                  */
@@ -85,26 +84,14 @@ extern uint32_t CurrentChannel; //index on the ADC_array
 */
 void ADC__DeInit(void);
 
-/**
-* \brief Global function, which measures and returns baterry voltage.
-*
-* This function launches adc__MeasureBatt() function.
-*
-* \return  adc__data.batt_mv value is returned.
-*/
-uint16_t ADC__CalcBattery(void);
-
-/**
-* \brief Global function, which measures and returns temperature value.
-*
-* This function launches adc__MeasureTemp() function and converts adc temperature
-* value into temperature in Celsius degree.
-*
-* \return  adc__data_s.temp_degree value is returned.
-*/
-int32_t ADC__CalcTemperature(void);
-
+void ADC__UpdateAdcStruct(int32_t* data);
 void ADC__MeasureAllAdc(void);
+
+int32_t ADC__GetSharp1AdcValue(void);
+int32_t ADC__GetVrefAdcValue(void);
+int32_t ADC__GetTempAdcValue(void);
+int32_t ADC__GetTempDegreeValue(void);
+
 
 #ifdef __cplusplus
   }
