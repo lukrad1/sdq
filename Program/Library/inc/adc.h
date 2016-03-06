@@ -47,7 +47,7 @@ int16_t ADC__CalcTemperature(void);
 /* Internal voltage reference calibration value address */
 #define VREFINT_CAL_ADDR ((uint16_t*) ((uint32_t) 0x1FF80078))
  /*! Special adress which contain Vref calibrate value */
-#define NUMBER_OF_ADC_CHANNEL 3
+#define NUMBER_OF_ADC_CHANNEL 4
 
 
 #define ERROR_UNEXPECTED_ADC_IT 0x01
@@ -87,11 +87,11 @@ void ADC__DeInit(void);
 void ADC__UpdateAdcStruct(int32_t* data);
 void ADC__MeasureAllAdc(void);
 
-int32_t ADC__GetSharp1AdcValue(void);
+int32_t ADC__GetSharp1MvValue(void);
 int32_t ADC__GetVrefAdcValue(void);
 int32_t ADC__GetTempAdcValue(void);
 int32_t ADC__GetTempDegreeValue(void);
-
+int32_t ADC__GetSharpPrzodLewyMvValue(void);
 
 #ifdef __cplusplus
   }

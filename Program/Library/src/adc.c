@@ -32,14 +32,14 @@
 static volatile struct
 {
 	uint8_t isInitiated : 1;    /*!< Did ADC initialization make? */
-	uint8_t vrefInitiated : 1;  /*!< Did Vref initialization make?*/
-  uint8_t measure_flag : 1;
-  uint8_t is_conversion : 1;
+	uint16_t vrefcalib_value;  /*!< calib adc vref value*/
+	uint16_t vdda_value;    /*!< stm power voltage value in mv */
 	uint32_t vref_adc;    /*!< Vref value in ADC */
 	uint32_t vref_mv;     /*!< Vref value in [mV] */
 	int32_t temp_adc;    /*!< Temperature value in ADC */
 	int32_t temp_degree;  /*!< Temperature value in [mV] */
-	uint32_t sharp1_adc;
+	uint32_t sharp1_mv;
+	uint32_t sharp_przod_lewy_mv;
 	uint16_t batt_mv;     /*!< Battery value in [mV] */
   
   uint32_t EE_Vref;
@@ -84,6 +84,7 @@ static void adc__Init(void)
        /* (1) Select HSI16 by writing 00 in CKMODE (reset value) */
          /* (2) Select the continuous mode and scanning direction */
          /* (3) Select CHSEL10, CHSEL17 and CHSEL18, Select CHSEL18 for temperature sensor  */
+    // resolution by default is 12-bit.
          /* (4) Select a sampling mode of 111 i.e. 239.5 ADC clk to be greater than 5 us */
          /* (5) Enable interrupts on EOC, EOSEQ and overrrun */
          /* (6) Wake-up the VREFINT (only for VLCD, Temp sensor and VRefInt) */
@@ -93,7 +94,7 @@ static void adc__Init(void)
          /* (8) Wait for VREFINT ADC buffer ready */
          //ADC1->CFGR2 &= ~ADC_CFGR2_CKMODE; /* (1) */
          ADC1->CFGR1 |= ADC_CFGR1_WAIT |ADC_CFGR1_CONT | ADC_CFGR1_SCANDIR; /* (2) */
-         ADC1->CHSELR = ADC_CHSELR_CHSEL10 \
+         ADC1->CHSELR = ADC_CHSELR_CHSEL10 | ADC_CHSELR_CHSEL11 \
                       | ADC_CHSELR_CHSEL17 | ADC_CHSELR_CHSEL18; /* (3) */
          ADC1->SMPR |= ADC_SMPR_SMPR_0 | ADC_SMPR_SMPR_1 | ADC_SMPR_SMPR_2; /* (4) */
          ADC1->IER = ADC_IER_EOCIE | ADC_IER_EOSEQIE | ADC_IER_OVRIE; /* (5) */
@@ -143,6 +144,7 @@ static void adc__Init(void)
         }
        }
 
+       adc__data_s.vrefcalib_value = *VREFINT_CAL_ADDR;
        adc__data_s.isInitiated = 1;
 
 }
@@ -241,24 +243,35 @@ void ADC__MeasureAllAdc(void)
 void ADC__UpdateAdcStruct(int32_t* data)
 {
 
-    adc__data_s.sharp1_adc = data[0];
-    adc__data_s.vref_adc = data[1];
-    adc__data_s.temp_adc = data[2];
+    adc__data_s.vdda_value = (3*1000*adc__data_s.vrefcalib_value/data[2]);
+
+    adc__data_s.vref_adc = data[2];
+    adc__data_s.vref_mv = ((adc__data_s.vdda_value * adc__data_s.vref_adc)/4095);
+
+    adc__data_s.sharp1_mv = ((adc__data_s.vdda_value *data[0]) / 4095);
+    adc__data_s.sharp_przod_lewy_mv = ((adc__data_s.vdda_value *data[1]) / 4095);
+
+    adc__data_s.temp_adc = data[3];
     adc__data_s.temp_degree = adc__ConvertTemperature(adc__data_s.temp_adc);
 
-    UART__SetSharp1ToSend();
-    UART__SetVrefToSend();
-    UART__SetIntTempToSend();
-
 }
+
 
 /******************************* END FUNCTION *********************************/
 
-int32_t ADC__GetSharp1AdcValue(void)
+int32_t ADC__GetSharp1MvValue(void)
 {
 
-  return adc__data_s.sharp1_adc;
+  return adc__data_s.sharp1_mv;
 }
+/******************************* END FUNCTION *********************************/
+
+int32_t ADC__GetSharpPrzodLewyMvValue(void)
+{
+
+  return adc__data_s.sharp_przod_lewy_mv;
+}
+
 
 /******************************* END FUNCTION *********************************/
 

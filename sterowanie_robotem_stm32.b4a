@@ -1,0 +1,571 @@
+﻿Version=2.5
+IconFile=
+NumberOfModules=0
+Package=sterowanie_robotem.btm
+DoNotOverwriteManifest=False
+ManifestCode='This code will be applied to the manifest file during compilation.~\n~'You do not need to modify it in most cases.~\n~'See this link for for more information: http://www.basic4ppc.com/forum/showthread.php?p=78136~\n~AddManifestText(~\n~<uses-sdk android:minSdkVersion="4" android:targetSdkVersion="14"/>~\n~<supports-screens android:largeScreens="true" ~\n~    android:normalScreens="true" ~\n~    android:smallScreens="true" ~\n~    android:anyDensity="true"/>)~\n~SetApplicationAttribute(android:icon, "@drawable/icon")~\n~SetApplicationAttribute(android:label, "$LABEL$")~\n~'End of default text.~\n~
+UserTypesHint=
+NumberOfFiles=2
+File1=robot_design.bal
+File2=sterowanie_bramami.bal
+NumberOfLibraries=4
+Library1=core
+Library2=phone
+Library3=randomaccessfile
+Library4=serial
+@EndOfDesignText@
+#Region  Project Attributes 
+	#ApplicationLabel: Sterowanie robotem mobilnym2
+	#VersionCode: 1
+	#VersionName: 
+	'SupportedOrientations possible values: unspecified, landscape or portrait.
+	#SupportedOrientations: unspecified
+	#CanInstallToExternalStorage: False
+#End Region
+
+#Region  Activity Attributes 
+	#FullScreen: False
+	#IncludeTitle: True
+#End Region
+
+Sub Process_Globals
+	'These global variables will be declared once when the application starts.
+	'These variables can be accessed from all modules.
+
+End Sub
+
+Sub Globals
+	'These global variables will be redeclared each time the activity is created.
+	'These variables can only be accessed from this module.
+
+	Dim Label1 As Label
+	Dim Label2 As Label
+	Dim Label3 As Label
+	Dim Label4 As Label
+	Dim Button1 As Button
+	Dim Button2 As Button
+	Dim Button3 As Button
+	Dim Button4 As Button
+	Dim Button5 As Button
+	Dim Button6 As Button
+	Dim Adapter As Serial	'zmienna pomocnicza do połączenia bluetooth'
+	Dim Timer1 As Timer		'zmienna pomocnicza określająca timer = definicja zmiennej timer'
+	Dim Timer2 As Timer
+	Dim Timer3 As Timer
+	Dim Flaga As Boolean	'zmienna pomocnicza oznaczająca, czy połączenie się powiodło czy też nie'
+	Dim Ekran As PhoneWakeState	'zmienna wykorzystana do podtrzymania podświetlenia ekranu'
+	Dim SeekBar1 As SeekBar
+	Dim Timer3 As Timer
+	
+	Dim xx As Int
+ 	Dim yy As Int
+ 
+	Dim Zmiana As Boolean
+	Dim Checkbox1 As CheckBox
+	Dim Strumien As AsyncStreams 'wymagany moduł RandomAccessFile
+	Dim Nadawanie As Boolean	'zmienna globalna stworzona do wysyłania danych'
+	Dim Timer3_help As Boolean
+	Dim Rotacja As Phone
+	Dim CzujnikRuchu As PhoneSensors
+ 	Dim CzujnikMagnetyczny As PhoneSensors
+	
+End Sub
+
+Sub Activity_Create(FirstTime As Boolean)
+
+	Activity.LoadLayout("robot_design")
+	Activity.Title = "Sterowanie Robotem Mobilnym"
+	Rotacja.SetScreenOrientation(1)
+	'**********************************************************************************************************************'
+	
+	Label1.Width = Activity.Width		'ten przycisk ma szerokość całego okna programu'
+	Label1.Height = Activity.Height/6	'ponieważ mam mieć w oknie 7 przycisków w pionie, więc pierwszy ma wysokość 1/7 okna'
+	Label1.Top = 0						'polozenie tej etykiety od gory to zero, czyli od samej gory okna programu'
+	Label1.Left = 0						'tak samo jest z polozeniem od lewej strony ekranu, 0 czyli przy oknie'
+	Label1.Gravity = Gravity.CENTER_HORIZONTAL + Gravity.CENTER_VERTICAL 'linia centrująca wyświetlaną wartość, u nas wartość seekBar1'
+	Label1.TextSize = Label1.TextSize * 2 'Powiększenie czcionki oryginalnej dwukrotnie'
+	Label1.Text = "Zdalne sterowanie robotem mobilnym"
+	
+	'**********************************************************************************************************************'
+	
+	Label2.Width = Activity.Width/2		'ten przycisk ma szerokość całego okna programu'
+	Label2.Height = Activity.Height/6	'ponieważ mam mieć w oknie 7 przycisków w pionie, więc pierwszy ma wysokość 1/7 okna'
+	Label2.Top = (Activity.Height/6) * 4						'polozenie tej etykiety od gory to zero, czyli od samej gory okna programu'
+	Label2.Left = (Activity.Width/2) * 1						'tak samo jest z polozeniem od lewej strony ekranu, 0 czyli przy oknie'
+	Label2.Gravity = Gravity.CENTER_HORIZONTAL + Gravity.CENTER_VERTICAL 'linia centrująca wyświetlaną wartość, u nas wartość seekBar1'
+	Label2.TextSize = Label2.TextSize * 2 'Powiększenie czcionki oryginalnej dwukrotnie'
+	
+	'**********************************************************************************************************************'
+	
+	Label3.Width = Activity.Width/2		'ten przycisk ma szerokość całego okna programu'
+	Label3.Height = Activity.Height/6	'ponieważ mam mieć w oknie 7 przycisków w pionie, więc pierwszy ma wysokość 1/7 okna'
+	Label3.Top = (Activity.Height/6) * 4						'polozenie tej etykiety od gory to zero, czyli od samej gory okna programu'
+	Label3.Left = 0						'tak samo jest z polozeniem od lewej strony ekranu, 0 czyli przy oknie'
+	Label3.Gravity = Gravity.CENTER_HORIZONTAL + Gravity.CENTER_VERTICAL 'linia centrująca wyświetlaną wartość, u nas wartość seekBar1'
+	Label3.TextSize = Label2.TextSize * 2 'Powiększenie czcionki oryginalnej dwukrotnie'
+	Label3.Text = "PWM: 0"
+	
+	'**********************************************************************************************************************'
+	
+	Label4.Width = Activity.Width/3		'ten przycisk ma szerokość całego okna programu'
+	Label4.Height = Activity.Height/6	'ponieważ mam mieć w oknie 7 przycisków w pionie, więc pierwszy ma wysokość 1/7 okna'
+	Label4.Top = (Activity.Height/6) * 1'polozenie tej etykiety od gory to zero, czyli od samej gory okna programu'
+	Label4.Left = (Activity.Width/3) * 2'tak samo jest z polozeniem od lewej strony ekranu, 0 czyli przy oknie'
+	Label4.Gravity = Gravity.CENTER_HORIZONTAL + Gravity.CENTER_VERTICAL 'linia centrująca wyświetlaną wartość, u nas wartość seekBar1'
+	Label4.TextSize = Label2.TextSize * 1 'Powiększenie czcionki oryginalnej dwukrotnie'
+	Label4.Text = "Kąt położenia urządzenia: 0"
+	
+	'**********************************************************************************************************************'
+	
+	Button1.Width = Activity.Width/3		'Ponieważ w jednej lini mam mieć dwa przyciski, dlatego szerokość jednego to 1/2 okna'
+	Button1.Height = Activity.Height/6		
+	Button1.Top = Activity.Height/6	 
+	Button1.Left = (Activity.Width/3) * 1
+	Button1.TextSize = Button1.TextSize * 1
+	Button1.Text = "Do przodu"
+	Button1.Enabled = False 
+	
+	'**********************************************************************************************************************'
+	
+	Button2.Width = Activity.Width/3
+	Button2.Height = Activity.Height/6
+	Button2.Top = (Activity.Height/6) * 2
+	Button2.Left = 0
+	Button2.TextSize = Button2.TextSize *1
+	Button2.Text = "W lewo"
+	Button2.Enabled = False 				'Po włączeniu programu przycisk nieaktywny, nie mogę w niego klikać'
+	
+	'**********************************************************************************************************************'
+	
+	Button3.Width = Activity.Width/3
+	Button3.Height = Activity.Height/6
+	Button3.Top = (Activity.Height/6) * 2
+	Button3.Left = (Activity.Width/3) * 1
+	Button3.TextSize = Button3.TextSize * 1
+	Button3.Text = "Zatrzymaj"
+	Button3.Enabled = False 				'Po włączeniu programu przycisk nieaktywny, nie mogę w niego klikać'
+	
+	'**********************************************************************************************************************'
+	
+	Button4.Width = Activity.Width/3
+	Button4.Height = Activity.Height/6
+	Button4.Top = (Activity.Height/6) * 2
+	Button4.Left = (Activity.Width/3) * 2
+	Button4.TextSize = Button3.TextSize * 1
+	Button4.Text = "W prawo"
+	Button4.Enabled = False 
+	
+	'**********************************************************************************************************************'
+	
+	Button5.Width = Activity.Width/3
+	Button5.Height = Activity.Height/6 
+	Button5.Top = (Activity.Height/6) * 3
+	Button5.Left = (Activity.Width/3) * 1
+	Button5.TextSize = Button4.TextSize * 1
+	Button5.Text = "Do tyłu"
+	Button5.Enabled = False 				'Po włączeniu programu przycisk nieaktywny, nie mogę w niego klikać'
+	
+	'**********************************************************************************************************************'
+	
+	Button6.Width = Activity.Width/2
+	Button6.Height = Activity.Height/6
+	Button6.Top = (Activity.Height/6) * 5
+	Button6.Left = (Activity.Width/2) * 1
+	Button6.TextSize = Button5.TextSize * 1
+	
+	'**********************************************************************************************************************'
+	Checkbox1.Width = Activity.Width/3		'Ponieważ w jednej lini mam mieć dwa przyciski, dlatego szerokość jednego to 1/2 okna'
+	Checkbox1.Height = Activity.Height/6		
+	Checkbox1.Top = Activity.Height/6	 
+	Checkbox1.Left = 0
+	Checkbox1.TextSize = Checkbox1.TextSize * 1
+	Checkbox1.Text = "Akcelerometr OFF"
+	Checkbox1.Enabled = True
+	'**********************************************************************************************************************'
+	
+	SeekBar1.Width = Activity.Width/2
+	SeekBar1.Height = Activity.Height/6
+	SeekBar1.Top = (Activity.Height/6) * 5
+	SeekBar1.Left = 0
+	SeekBar1.Max = 255
+	SeekBar1.Value = 0
+	
+	Activity.AddMenuItem("Informacja", "MenuInfo")		'funkcja dodająca opcje menu w programie'
+	Adapter.Initialize("Adapter")						'inicjalizacja połączenia bluetooth'
+	 
+	'**********************************************************************************************************************'
+	xx = -1
+	yy = -1
+	'**********************************************************************************************************************'
+	Timer1.Initialize("Timer1", 100)	'inicjalizacja timera pracą na 100 ms'
+	Timer1.Enabled = True				'włączenie timera'
+	Timer2.Initialize("Timer2", 5000)	'inicjalizacja 2 timera potrzebnego do oczekiwania na połączenie, gdy przez 5sek'
+	Timer2.Enabled=False				'się nie połączy to ten timer rozłącza łączenie'
+ 	
+	Timer3.Initialize("Timer3", 2000)
+ 	Timer3.Enabled=False
+	Flaga = False
+	 
+	Ekran.KeepAlive(True)				'załączenie opcji ciągłego podświetlania ekranu'
+
+	Nadawanie = True
+	Timer3_help = True
+
+	Button1.Enabled=True
+  	Button2.Enabled=True
+  	Button3.Enabled=True
+  	Button4.Enabled=True
+  	Button5.Enabled=True
+  
+  	Zmiana=False
+  	CzujnikRuchu.Initialize(CzujnikRuchu.TYPE_ACCELEROMETER)
+ 	CzujnikMagnetyczny.Initialize(CzujnikMagnetyczny.TYPE_ORIENTATION)
+	End Sub
+
+Sub Timer1_Tick							'funkcja obslugi timera dla sprawdzenia aktywności bluetooth'
+	
+	Try
+ 		If Adapter.IsEnabled = True Then		'jeżeli mamy połączenie z modułem btm'
+ 
+  			Label2.Text="Bluetooth włączony"
+			Button6.Enabled = True
+			
+		  If Flaga=True Then		'zależnie od zmiennej Flaga aktywujemy przyciski w funkcji timera jeśli bluetooth jest włączony,'
+		   Label2.Text = "Bluetooth włączony - połączono z robotem"
+		   Button6.Text = "Rozłącz"	' jeśli jest wyłączony to oba przyciski będą nieaktywne'
+		  Else
+		   Label2.Text = "Bluetooth włączony - brak połączenia z robotem"
+		   Button6.Text = "Połącz"
+		  End If
+		  
+ 
+		 Else
+		  Label2.Text="Bluetooth wyłączony"
+		  Flaga=False
+		  Button6.Text = "Włącz" & CRLF & "bluetooth"
+		  Button1.Enabled=True
+		  Button2.Enabled=True
+		  Button3.Enabled=True
+		  Button4.Enabled=True
+		  Button5.Enabled=True
+		  
+		 End If
+	Catch
+	End Try
+End Sub
+
+Sub Timer2_Tick
+ Timer1.Enabled=True
+ Timer2.Enabled=False
+End Sub
+
+Sub Timer3_tick
+ If Zmiana=True Then
+  If xx >= 0  AND yy >= 0 Then
+  	If xx >= 65 Then
+		If Nadawanie = True Then			'jeżeli mamy połączenie to spróbuj wysłać dane'
+	   	'komenda "10" - jazda w lewo'
+	   	Rozkaz(0 + 2)	'bit startu
+		Rozkaz(48 + 1)
+	   	Rozkaz(48 + 0)
+	   	Rozkaz(13)
+	   	Rozkaz(10)
+		End If
+	Else If xx <= 35 Then
+		If Nadawanie = True Then			'jeżeli mamy połączenie to spróbuj wysłać dane'
+	   'komenda "20" - jazda w prawo
+	   Rozkaz(0 + 2)	'bit startu
+	   Rozkaz(48 + 2)
+	   Rozkaz(48 + 0)
+	   Rozkaz(13)
+	   Rozkaz(10)
+	   End If
+	Else If yy >= 70 Then
+	 	If Nadawanie = True Then			'jeżeli mamy połączenie to spróbuj wysłać dane'
+	   	'komenda "25" - jazda do tylu
+	   Rozkaz(0 + 2) 'bit startu
+	   Rozkaz(48 + 1)
+	   Rozkaz(48 + 1)
+	   Rozkaz(13)
+	   Rozkaz(10)
+	 	End If
+	 Else If yy <= 45 Then
+	 	If Nadawanie = True Then			'jeżeli mamy połączenie to spróbuj wysłać dane'
+	    'komenda "11" - jazda do przodu' odwrotne podlaczenie wiec zamiana tyl przod
+	   Rozkaz(0 + 2) 'bit startu
+	   Rozkaz(48 + 2)
+	   Rozkaz(48 + 5)
+	   Rozkaz(13)
+	   Rozkaz(10)
+	   	End If  
+	   
+	 Else If xx > 35 AND xx < 65 AND yy > 45 AND yy < 70 Then
+	 	If Nadawanie = True Then			'jeżeli mamy połączenie to spróbuj wysłać dane'
+	   	'komenda "22" - stop'
+		Rozkaz(0 + 2)	'bit startu
+	   	Rozkaz(48 + 2)
+	   	Rozkaz(48 + 2)
+	   	Rozkaz(13)
+	   	Rozkaz(10)
+		End If
+	 End If  
+	
+	xx = -1
+	yy = -1
+  End If
+  Zmiana=False
+ End If
+End Sub
+
+Sub Strumien_Error
+ Adapter.Disconnect
+ Flaga=False
+End Sub
+ 
+Sub Strumien_Terminated
+ Adapter.Disconnect
+ Flaga=False
+End Sub
+
+Sub Strumien_NewData (Buffer() As Byte) 'funkcja odbioru danych strumieniowych, automatycznie wywoływana z parametrem w postaci tablicy bajtów'
+ 'znaki wysyłane z AVR powinny być zakodowane w ASCII czyli dla liczby 0 = chr(48)'
+ Dim x As String
+ Nadawanie = False
+ x=BytesToString(Buffer, 0, Buffer.Length, "UTF8") 'przekształcenie bajtów na łańcuch znakowy'
+ Try
+  x=Bit.ToBinaryString(x)							'przekształcenie łańcucha znakowego na postać binarną np jeżeli"5" to mamy 101, gdy "2" 10'
+  x=NumberFormat(x, 6 ,0)	'ponieważ potrzebna jest informacja o trzech bitach więc dopisujemy sami sobie zera z przodu, dzięki temu gdy nadleci "2" to mamy 010'
+  
+ Catch
+ End Try
+ Nadawanie = True ' Po zaznaczeniu zezwalamy na nadawanie rozkazów od zmiany button przez ustawienie zmiennej Nadawanie na True. '
+End Sub
+
+Sub MenuInfo_Click	'funkcja obsługi menu, tutaj dodaję tekst który będzie wyświetlany w menu'
+
+ Msgbox("Aplikacja do sterowania robotem mobilnym za pomocą Bluetooth", "BlueSter 1.0.0")
+
+End Sub
+
+Sub Activity_Resume
+	CzujnikRuchu.StartListening("CzujnikRuchu")
+	CzujnikMagnetyczny.StartListening("CzujnikMagnetyczny")
+End Sub
+
+Sub CzujnikRuchu_SensorChanged(XYZ() As Float)
+ xx=Round( ( XYZ(0) + 10 ) * 5 )
+ yy=Round( ( XYZ(1) + 10 ) * 5 )
+ If xx<0 Then xx=0
+ If xx>100 Then xx=100
+ If yy<0 Then yy=0
+ If yy>100 Then yy=100
+ Zmiana=True
+End Sub
+ 
+Sub CzujnikMagnetyczny_SensorChanged(Alfa() As Float)
+ Label4.Text="Kąt położenia urządzenia: " & Round(Alfa(0)) & Chr(176)
+End Sub
+
+Sub Activity_Pause (UserClosed As Boolean)
+
+End Sub
+
+Sub Adapter_Connected (Powodzenie As Boolean)	'funkcja łączenia bluetooth'
+ Timer2.Enabled = False
+ Timer1.Enabled=True							' jeżeli połączono to ustawi flagę pomocniczą na true'
+ Flaga=Powodzenie
+ If Flaga=True Then								
+  Strumien.Initialize(Adapter.InputStream,Adapter.OutputStream,"Strumien")	'jeżeli mamy połączenie to inicjalizujemy strumień przesyłania danych'
+  
+  'komenda "22" - stop'
+	   Rozkaz(0 + 2) 'bit startu
+	   Rozkaz(48 + 2)
+	   Rozkaz(48 + 2)
+	   Rozkaz(13)
+	   Rozkaz(10)
+  Timer3.Enabled = False
+ End If
+End Sub
+
+Sub Checkbox1_CheckedChange(Checked As Boolean)
+
+	If Checked = True Then
+		
+		Checkbox1.Text = "Akcelerometr ON"
+		Button1.Enabled=False
+  		Button2.Enabled=False
+  		Button3.Enabled=False
+  		Button4.Enabled=False
+  		Button5.Enabled=False
+		Timer3.Enabled = True
+		
+	Else If Checked = False Then
+		
+		Checkbox1.Text = "Akcelerometr OFF"
+		Button1.Enabled=True
+  		Button2.Enabled=True
+  		Button3.Enabled=True
+  		Button4.Enabled=True
+  		Button5.Enabled=True
+		Timer3.Enabled = False
+		
+	End If
+		
+	
+End Sub
+
+Sub Button1_Click
+
+	Button1.Enabled = False
+	Button2.Enabled = True
+	Button3.Enabled = True
+	Button4.Enabled = True
+	Button5.Enabled = True
+	
+	If Nadawanie = True Then			'jeżeli mamy połączenie to spróbuj wysłać dane'
+	  'komenda "11" - jazda do przodu' odwrotne podlaczenie wiec zamiana tyl przod
+	   Rozkaz(0 + 2) 'bit startu
+	   Rozkaz(48 + 2)
+	   Rozkaz(48 + 5)
+	   Rozkaz(13)
+	   Rozkaz(10)
+	 End If
+End Sub
+
+Sub Button2_Click
+	
+	Button2.Enabled = False
+	Button1.Enabled = True
+	Button3.Enabled = True
+	Button4.Enabled = True
+	Button5.Enabled = True
+	
+	If Nadawanie = True Then			'jeżeli mamy połączenie to spróbuj wysłać dane'
+	   'komenda "10" - jazda w lewo'
+	   Rozkaz(0 + 2) 'bit startu
+	   Rozkaz(48 + 1)
+	   Rozkaz(48 + 0)
+	   Rozkaz(13)
+	   Rozkaz(10)
+	 End If
+End Sub
+Sub Button3_Click
+	
+	Button3.Enabled = False
+	Button1.Enabled = True
+	Button2.Enabled = True
+	Button4.Enabled = True
+	Button5.Enabled = True
+	
+	If Nadawanie = True Then			'jeżeli mamy połączenie to spróbuj wysłać dane'
+	   'komenda "22" - stop'
+	   Rozkaz(0 + 2) 'bit startu
+	   Rozkaz(48 + 2)
+	   Rozkaz(48 + 2)
+	   Rozkaz(13)
+	   Rozkaz(10)
+	 End If
+	
+End Sub
+
+Sub Button4_Click
+	
+	Button4.Enabled = False
+	Button1.Enabled = True
+	Button2.Enabled = True
+	Button3.Enabled = True
+	Button5.Enabled = True
+	
+	If Nadawanie = True Then			'jeżeli mamy połączenie to spróbuj wysłać dane'
+	   'komenda "20" - jazda w prawo
+	   Rozkaz(0 + 2) 'bit startu
+	   Rozkaz(48 + 2)
+	   Rozkaz(48 + 0)
+	   Rozkaz(13)
+	   Rozkaz(10)
+	 End If
+	
+End Sub
+Sub Button5_Click
+	
+	Button5.Enabled = False
+	Button1.Enabled = True
+	Button2.Enabled = True
+	Button3.Enabled = True
+	Button4.Enabled = True
+	
+	If Nadawanie = True Then			'jeżeli mamy połączenie to spróbuj wysłać dane'
+	   'komenda "25" - jazda do tylu
+	   Rozkaz(0 + 2) 'bit startu
+	   Rozkaz(48 + 1)
+	   Rozkaz(48 + 1)
+	   Rozkaz(13)
+	   Rozkaz(10)
+	 End If
+	
+End Sub
+
+
+Sub Button6_Click
+
+	If Flaga = False Then
+	
+		Timer2.Enabled=True
+		Timer1.Enabled=False					'Przy rozłączaniu się z modułem ustawiamy zmienną Flaga Do razu na False, ciekawym 
+		Label2.Text="Czekaj.."					'trikiem było wyłaczenie timera na czas połączenia dzięki czemu mogliśmy Do Label1
+		Adapter.Connect("00:12:6F:2E:8A:0F")	'napisać "Czekaj.." informujące nas że trwa proces łączenia, Timer ten zostanie 
+		Timer3_help = True										'włączony kiedy tylko dostaniemy informację o połączeniu w funkcji Adapter_Connected.
+		
+	Else
+		'Rozkaz(55) '7'
+		'Rozkaz(55)
+		'Rozkaz(13)
+		'Rozkaz(10)
+		Button1.Enabled=True
+		Button2.Enabled=True
+		Button3.Enabled=True
+		Button4.Enabled=True
+		Button5.Enabled=True
+		Strumien.Close
+		Adapter.Disconnect
+ 		Flaga=False
+	End If
+End Sub
+
+Sub Activity_KeyPress (KeyCode As Int) As Boolean	'funkcja wyłączająca program, czyli sprzątająca śmieci'
+ If KeyCode = 4 Then		'jeżeli wcisne strzałkę wyjścia z programu, która posiada numer 4 to'
+	'komenda "22" - stop'
+	   Rozkaz(0 + 2) 'bit startu
+	   Rozkaz(48 + 2)
+	   Rozkaz(48 + 2)
+	   Rozkaz(13)
+	   Rozkaz(10)
+   Strumien.Close
+   Adapter.Disconnect		'rozłączam bluetooth i kończę wszystkie opcje typu podświetlanie ekranu'
+   Activity.Finish
+   ExitApplication			'wychodzę z aplikacji'
+ End If                        
+End Sub
+Sub Rozkaz (x As Int)
+	If Flaga = True Then
+	Dim s As String
+	s = Chr (x)
+	Strumien.Write(s.GetBytes("UTF8"))
+	End If
+End Sub
+
+Sub SeekBar1_ValueChanged (Value As Long, UserChanged As Boolean)
+	If UserChanged Then
+	Value = ((Value*100)/255)
+	Label3.Text ="PWM = " & NumberFormat(Value,0,0)
+		If Nadawanie = True Then			'jeżeli mamy połączenie to spróbuj wysłać dane'
+			
+		   Rozkaz(0 + 2) 'bit startu
+		   Rozkaz(37)	'it is sign % in ASCI'
+		   Rozkaz(Value)
+		   Rozkaz(13)
+		   Rozkaz(10)
+		 End If
+	End If
+		 
+End Sub

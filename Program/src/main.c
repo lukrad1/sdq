@@ -69,6 +69,7 @@ int main(void)
   /* Enable SYSCFG Clock - it's required to adc measure, uart and dma */
   RCC->APB2ENR |= (RCC_APB2ENR_SYSCFGEN);
   GPIO__Init();
+  TIMER__InitClk();
   SysTick_Config(4000); /* 1ms config */
   GPIO__ConfigUART(1);
   UART__DMAConfig();
@@ -85,13 +86,23 @@ int main(void)
     if(flag_1ms)
     {
       flag_1ms = 0;
+      ADC__MeasureAllAdc();
+      if(ADC__GetSharp1MvValue() > 1000)
+      {
+        MOTORS__jazda_zatrzymana();
+      }
       counter++;
     }
 
-    if(counter >= 5000)
+    if(counter >= 3000)
     {
 
-      ADC__MeasureAllAdc();
+      UART__SetSharp1ToSend();
+      UART__SetVrefToSend();
+      UART__SetIntTempToSend();
+      UART__SetSharpLewyPrzodToSend();
+
+
       counter = 0;
     }
 
@@ -179,7 +190,7 @@ void EXTI4_15_IRQHandler(void)
 
 
     GPIOA->ODR ^= (1 << 5);//toggle green led on PA5
-    UART__StartDmaTransmision(data, 3);
+    UART__StartDmaTransmision(data,"", 3);
 
   }
 }

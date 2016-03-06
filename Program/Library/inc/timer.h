@@ -47,6 +47,11 @@ uint8_t TIMER__GetStatus(void);
 #define TIMER__4MHZ_CLK 4000000
 #define TIMER__1MHZ_CLK 1000000
 
+
+/* Define the Timer to be configured */
+#define TIMx_BASE       TIM2_BASE
+#define TIMx            ((TIM_TypeDef *) TIMx_BASE)
+
 /* Typedef definition */
 
 typedef union
@@ -136,6 +141,10 @@ void TIMER__SetFlag(timer__union_u_t* union_address, uint8_t set_reset_status);
 *
 */
 uint8_t TIMER__GetStatus(void);
+
+void TIMER__PWM_DC1_2_ON(void);
+void TIMER__PWM_DC1_2_OFF(void);
+void TIMER__PWM_DC1_2_Change_Duty(uint8_t duty_in_percent);
 
 #ifdef __cplusplus
   }

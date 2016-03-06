@@ -53,43 +53,6 @@
 
 /* Interface (exported) functions */
 
-void PWM__DC1_2_ON(void)
-{
-  /* (1) Enable the peripheral clock of GPIOA */
-  /* (2) Select output mode (01) on GPIOA pin  */
-  RCC->IOPENR |= RCC_IOPENR_GPIOAEN; /* (1) */
-
-  GPIOA->MODER =
-  (GPIOA->MODER & ~(GPIO_MODER_MODE0)) | (GPIO_MODER_MODE0_0);
-
-  GPIOA->MODER =
-  (GPIOA->MODER & ~(GPIO_MODER_MODE1)) | (GPIO_MODER_MODE1_0);
-
-  //set PWM1 as HIGH (100%)
-  GPIOA->BSRR = (1 << 0);
-  //set PWM2 as HIGH (100%)
-  GPIOA->BSRR = (1 << 1);
-
-}
-
-void PWM__DC1_2_OFF(void)
-{
-  /* (1) Enable the peripheral clock of GPIOA */
-  /* (2) Select output mode (01) on GPIOA pin  */
-  RCC->IOPENR |= RCC_IOPENR_GPIOAEN; /* (1) */
-
-  GPIOA->MODER =
-  (GPIOA->MODER & ~(GPIO_MODER_MODE0)) | (GPIO_MODER_MODE0_0);
-
-  GPIOA->MODER =
-  (GPIOA->MODER & ~(GPIO_MODER_MODE1)) | (GPIO_MODER_MODE1_0);
-
-  //set PWM1 as HIGH (100%)
-  GPIOA->BRR = (1 << 0);
-  //set PWM2 as HIGH (100%)
-  GPIOA->BRR = (1 << 1);
-
-}
 
 static void kolo_przod_prawe_do_przodu(void)
 {
@@ -110,7 +73,7 @@ static void kolo_przod_prawe_do_przodu(void)
   //reset AIN2 (set as LOW)
   KOLO_PRZOD_PRAWE_PORT->BRR = (1 << KOLO_PRZOD_PRAWE_AIN2_PIN_NUMBER);
 
-  PWM__DC1_2_ON();
+  TIMER__PWM_DC1_2_ON();
 }
 
 
@@ -133,7 +96,7 @@ static void kolo_przod_prawe_do_tylu(void)
   //reset AIN1 (set as LOW)
   KOLO_PRZOD_PRAWE_PORT->BRR = (1 << KOLO_PRZOD_PRAWE_AIN1_PIN_NUMBER);
 
-  PWM__DC1_2_ON();
+  TIMER__PWM_DC1_2_ON();
 }
 
 static void kolo_przod_prawe_stop(void)
@@ -155,7 +118,7 @@ static void kolo_przod_prawe_stop(void)
   //reset AIN2 (set as LOW)
   KOLO_PRZOD_PRAWE_PORT->BRR = (1 << KOLO_PRZOD_PRAWE_AIN2_PIN_NUMBER);
 
-  PWM__DC1_2_OFF();
+  TIMER__PWM_DC1_2_OFF();
 }
 
 
@@ -177,7 +140,7 @@ static void kolo_przod_lewe_do_przodu(void)
   //resetBIN2 (set as LOW)
   KOLO_PRZOD_LEWE_PORT->BRR = (1 << KOLO_PRZOD_LEWE_BIN2_PIN_NUMBER);
 
-  PWM__DC1_2_ON();
+  TIMER__PWM_DC1_2_ON();
 }
 static void kolo_przod_lewe_do_tylu(void)
 {
@@ -198,7 +161,7 @@ static void kolo_przod_lewe_do_tylu(void)
   //reset BIN1 (set as LOW)
   KOLO_PRZOD_LEWE_PORT->BRR = (1 << KOLO_PRZOD_LEWE_BIN1_PIN_NUMBER);
 
-  PWM__DC1_2_ON();
+  TIMER__PWM_DC1_2_ON();
 }
 static void kolo_przod_lewe_stop(void)
 {
@@ -219,7 +182,7 @@ static void kolo_przod_lewe_stop(void)
   //reset AIN2 (set as LOW)
   KOLO_PRZOD_LEWE_PORT->BRR = (1 << KOLO_PRZOD_LEWE_BIN2_PIN_NUMBER);
 
-  PWM__DC1_2_OFF();
+  TIMER__PWM_DC1_2_OFF();
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 static void kolo_tyl_prawe_do_przodu(void)

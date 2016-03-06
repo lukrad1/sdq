@@ -114,8 +114,7 @@
 
 /* Exported functions */
 
-  void PWM__DC1_2_ON(void);
-  void PWM__DC1_2_OFF(void);
+
   void MOTORS__skret_w_lewo(void);
   void MOTORS__skret_w_prawo(void);
   void MOTORS__jazda_do_tylu(void);
