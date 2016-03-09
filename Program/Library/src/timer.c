@@ -34,7 +34,7 @@
 
 /* Global variable declaration */
 
-static volatile timer__union_u_t timer__data_u;
+volatile timer__union_u_t timer__data_u;
 
 /****************************************************************************/
 /*                  FUNCTIONS DECLARATIONS AND DEFINITIONS                  */
@@ -90,15 +90,44 @@ void TIMER__InitClk(void)
 void TIMER__PWM_DC1_2_ON(void)
 {
 
-  TIMx->CR1 |= TIM_CR1_CEN;
-  TIMx->EGR |= TIM_EGR_UG; /* (8) */
+  if(!timer__data_u.time_pwm_is_on)
+  {
+    timer__data_u.time_pwm_is_on = 1;
+    TIMx->CR1 &= ~TIM_CR1_CEN; /* (7) */
+    TIMx->CCR1 = timer__data_u.time_pwm_last_value;
+    TIMx->CCR2 = timer__data_u.time_pwm_last_value;
+    TIMx->CR1 |= TIM_CR1_CEN;
+    TIMx->EGR |= TIM_EGR_UG; /* (8) */
+  }
+
+}
+
+/******************************* END FUNCTION *********************************/
+
+void TIMER__PWM_DC1_2_ALL_OFF(void)
+{
+  if(timer__data_u.time_pwm_is_on)
+  {
+    timer__data_u.time_pwm_is_on = 0;
+    TIMx->CR1 &= ~TIM_CR1_CEN; /* (7) */
+  }
 }
 
 /******************************* END FUNCTION *********************************/
 
 void TIMER__PWM_DC1_2_OFF(void)
 {
-  TIMx->CR1 &= ~TIM_CR1_CEN; /* (7) */
+  if(timer__data_u.time_pwm_is_on)
+  {
+    timer__data_u.time_pwm_is_on = 0;
+    TIMx->CR1 &= ~TIM_CR1_CEN; /* (7) */
+
+    TIMx->CCR1 = 0; /* (3) */
+    TIMx->CCR2 = 0; /* (3) */
+
+    TIMx->CR1 |= TIM_CR1_CEN;
+    TIMx->EGR |= TIM_EGR_UG; /* (8) */
+  }
 }
 
 /******************************* END FUNCTION *********************************/
@@ -118,16 +147,19 @@ void TIMER__PWM_DC1_2_Change_Duty(uint8_t duty_in_percent)
           select direction as upcounter (DIR = 0, reset value) */
    /* (8) Force update generation (UG = 1) */
 
-  TIMER__PWM_DC1_2_OFF();
+  TIMER__PWM_DC1_2_ALL_OFF();
 
-   TIMx->CCR1 = duty_in_percent; /* (3) */
-   TIMx->CCR2 = duty_in_percent; /* (3) */
+  TIMx->CCR1 = duty_in_percent; /* (3) */
+  TIMx->CCR2 = duty_in_percent; /* (3) */
 
-   TIMER__PWM_DC1_2_ON();
+  TIMER__PWM_DC1_2_ON();
 
+  timer__data_u.time_pwm_last_value = duty_in_percent;
 }
 
 /******************************* END FUNCTION *********************************/
+
+
 
 void TIMER__DelayMs(uint16_t ms)
 {

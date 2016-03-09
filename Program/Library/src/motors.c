@@ -20,6 +20,7 @@
 #include "stm32l0xx.h"
 #include "gpio.h"
 #include "motors.h"
+#include "timer.h"
 /****************************************************************************/
 /*                      DECLARATION AND DEFINITIONS                         */
 /****************************************************************************/
@@ -73,7 +74,6 @@ static void kolo_przod_prawe_do_przodu(void)
   //reset AIN2 (set as LOW)
   KOLO_PRZOD_PRAWE_PORT->BRR = (1 << KOLO_PRZOD_PRAWE_AIN2_PIN_NUMBER);
 
-  TIMER__PWM_DC1_2_ON();
 }
 
 
@@ -96,7 +96,6 @@ static void kolo_przod_prawe_do_tylu(void)
   //reset AIN1 (set as LOW)
   KOLO_PRZOD_PRAWE_PORT->BRR = (1 << KOLO_PRZOD_PRAWE_AIN1_PIN_NUMBER);
 
-  TIMER__PWM_DC1_2_ON();
 }
 
 static void kolo_przod_prawe_stop(void)
@@ -118,7 +117,6 @@ static void kolo_przod_prawe_stop(void)
   //reset AIN2 (set as LOW)
   KOLO_PRZOD_PRAWE_PORT->BRR = (1 << KOLO_PRZOD_PRAWE_AIN2_PIN_NUMBER);
 
-  TIMER__PWM_DC1_2_OFF();
 }
 
 
@@ -140,7 +138,6 @@ static void kolo_przod_lewe_do_przodu(void)
   //resetBIN2 (set as LOW)
   KOLO_PRZOD_LEWE_PORT->BRR = (1 << KOLO_PRZOD_LEWE_BIN2_PIN_NUMBER);
 
-  TIMER__PWM_DC1_2_ON();
 }
 static void kolo_przod_lewe_do_tylu(void)
 {
@@ -161,7 +158,6 @@ static void kolo_przod_lewe_do_tylu(void)
   //reset BIN1 (set as LOW)
   KOLO_PRZOD_LEWE_PORT->BRR = (1 << KOLO_PRZOD_LEWE_BIN1_PIN_NUMBER);
 
-  TIMER__PWM_DC1_2_ON();
 }
 static void kolo_przod_lewe_stop(void)
 {
@@ -182,7 +178,6 @@ static void kolo_przod_lewe_stop(void)
   //reset AIN2 (set as LOW)
   KOLO_PRZOD_LEWE_PORT->BRR = (1 << KOLO_PRZOD_LEWE_BIN2_PIN_NUMBER);
 
-  TIMER__PWM_DC1_2_OFF();
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 static void kolo_tyl_prawe_do_przodu(void)
@@ -312,6 +307,7 @@ void MOTORS__skret_w_lewo(void)
   kolo_tyl_lewe_do_tylu();
   kolo_przod_prawe_do_przodu();
   kolo_tyl_prawe_do_przodu();
+  TIMER__PWM_DC1_2_ON();
 }
 
 void MOTORS__skret_w_prawo(void)
@@ -320,22 +316,26 @@ void MOTORS__skret_w_prawo(void)
   kolo_tyl_prawe_do_tylu();
   kolo_przod_lewe_do_przodu();
   kolo_tyl_lewe_do_przodu();
+  TIMER__PWM_DC1_2_ON();
 }
 
 void MOTORS__jazda_do_tylu(void)
 {
-  kolo_przod_lewe_do_tylu();
-  kolo_przod_prawe_do_tylu();
-  kolo_tyl_lewe_do_tylu();
-  kolo_tyl_prawe_do_tylu();
+  kolo_przod_lewe_do_przodu();
+   kolo_przod_prawe_do_przodu();
+   kolo_tyl_lewe_do_przodu();
+   kolo_tyl_prawe_do_przodu();
+   TIMER__PWM_DC1_2_ON();
+
 }
 
 void MOTORS__jazda_do_przodu(void)
 {
-  kolo_przod_lewe_do_przodu();
-  kolo_przod_prawe_do_przodu();
-  kolo_tyl_lewe_do_przodu();
-  kolo_tyl_prawe_do_przodu();
+  kolo_przod_lewe_do_tylu();
+   kolo_przod_prawe_do_tylu();
+   kolo_tyl_lewe_do_tylu();
+   kolo_tyl_prawe_do_tylu();
+   TIMER__PWM_DC1_2_ON();
 }
 
 void MOTORS__jazda_zatrzymana(void)
@@ -344,6 +344,7 @@ void MOTORS__jazda_zatrzymana(void)
   kolo_przod_prawe_stop();
   kolo_tyl_lewe_stop();
   kolo_tyl_prawe_stop();
+  TIMER__PWM_DC1_2_OFF();
 }
 
 

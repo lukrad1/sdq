@@ -20,6 +20,8 @@
 #include "gpio.h"
 #include "adc.h"
 #include "uart.h"
+#include "timer.h"
+#include "motors.h"
 /****************************************************************************/
 /*                      DECLARATION AND DEFINITIONS                         */
 /****************************************************************************/
@@ -32,6 +34,8 @@
 static volatile struct
 {
 	uint8_t isInitiated : 1;    /*!< Did ADC initialization make? */
+	uint8_t is_Obstacle : 1;    /*jezeli jest przeszkoda to ta zmienna blokuje ustawianie pwm z tabletu*/
+	uint8_t end_adc_measure : 1;
 	uint16_t vrefcalib_value;  /*!< calib adc vref value*/
 	uint16_t vdda_value;    /*!< stm power voltage value in mv */
 	uint32_t vref_adc;    /*!< Vref value in ADC */
@@ -243,16 +247,18 @@ void ADC__MeasureAllAdc(void)
 void ADC__UpdateAdcStruct(int32_t* data)
 {
 
-    adc__data_s.vdda_value = (3*1000*adc__data_s.vrefcalib_value/data[2]);
+    adc__data_s.vdda_value = (3*1000*adc__data_s.vrefcalib_value/data[VREF]);
 
-    adc__data_s.vref_adc = data[2];
+    adc__data_s.vref_adc = data[VREF];
     adc__data_s.vref_mv = ((adc__data_s.vdda_value * adc__data_s.vref_adc)/4095);
 
-    adc__data_s.sharp1_mv = ((adc__data_s.vdda_value *data[0]) / 4095);
-    adc__data_s.sharp_przod_lewy_mv = ((adc__data_s.vdda_value *data[1]) / 4095);
+    adc__data_s.sharp1_mv = ((adc__data_s.vdda_value *data[SHARP_PRZOD_SRODEK]) / 4095);
+    adc__data_s.sharp_przod_lewy_mv = ((adc__data_s.vdda_value *data[SHARP_PRZOD_LEWY]) / 4095);
 
-    adc__data_s.temp_adc = data[3];
+    adc__data_s.temp_adc = data[TEMPERATURA];
     adc__data_s.temp_degree = adc__ConvertTemperature(adc__data_s.temp_adc);
+
+    adc__data_s.end_adc_measure = 1;
 
 }
 
@@ -297,39 +303,96 @@ int32_t ADC__GetTempDegreeValue(void)
   return adc__data_s.temp_degree;
 }
 
-/*
- void ADC__Measure(ADC__conversionType_e_t conversionType)
+/******************************* END FUNCTION *********************************/
+
+void ADC__SetIsObstacleFlag(void)
+{
+
+  adc__data_s.is_Obstacle = 1;
+}
+
+/******************************* END FUNCTION *********************************/
+
+void ADC__ResetIsObstacleFlag(void)
+{
+
+  adc__data_s.is_Obstacle = 0;
+}
+
+/******************************* END FUNCTION *********************************/
+
+uint8_t ADC__GetIsObstacleFlag(void)
+{
+
+  return adc__data_s.is_Obstacle;
+}
+
+
+void ADC__Poll(void)
+{
+  uint8_t i = 0;
+
+  if(timer__data_u.time_adc_5ms_flag)
   {
-    uint32_t buffer = 0;
-    uint8_t i;
+    timer__data_u.time_adc_5ms_flag = 0;
 
-    if(adc__data_s.isInitiated == 0)
+    if(!adc__data_s.end_adc_measure)
     {
-      ADC__Init();
+      ADC__MeasureAllAdc();
     }
-
-    switch(conversionType)
+    else
     {
-    default:
-      break;
+      adc__data_s.end_adc_measure = 0;
+      // vref oraz temp zawsze musza byc na koncu, by ponizsze dzialalo
+      for(i = 0; i < 1;i++)//NUMBER_OF_SHARP; i++)
+      {
+        if(ADC_array[i] > 1400 && timer__data_u.time_pwm_is_on)
+        {
+          MOTORS__jazda_zatrzymana();
+          switch(i)
+          {
+            case SHARP_PRZOD_SRODEK:
+            {
 
-    case adc__CONVTYPE_BATTERY:
-      adc__MeasureBatt();
-      break;
+              TIMER__PWM_DC1_2_Change_Duty(40);
+              MOTORS__jazda_do_tylu();
 
-    case adc__CONVTYPE_CO:
-      adc__MeasureCO();
-      break;
+              //tutaj beda tylko flagi ustawiane i w innym pollingu bedzie wykonywane cofanie, omijanie
+              break;
+            }
+            case SHARP_PRZOD_LEWY:
+            {
 
-    case adc__CONVTYPE_VOLTREF:
-      adc__MeasureVref();
-      break;
+              break;
+            }
+          }
+        }
+        else if(ADC_array[i] > 800)
+        {
+          if(timer__data_u.time_pwm_last_value > 40)
+          {
+            TIMER__PWM_DC1_2_Change_Duty(40);
+          }
 
-    case adc__CONVTYPE_TEMPERATURE:
-      adc__MeasureTemp();
-      break;
+          adc__data_s.is_Obstacle = 1;
+        }
+
+        else if(ADC_array[i] > 500)
+        {
+          if(timer__data_u.time_pwm_last_value > 60)
+          {
+            TIMER__PWM_DC1_2_Change_Duty(60);
+          }
+          adc__data_s.is_Obstacle = 1;
+        }
+        else
+        {
+          adc__data_s.is_Obstacle = 0;
+        }
+      }
     }
-  }*/
+  }
+}
 
 #ifdef __cplusplus
   }

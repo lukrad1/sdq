@@ -61,8 +61,12 @@ typedef union
   struct
   {
     uint8_t time_1ms_flag : 1;
+    uint8_t time_adc_5ms_flag : 1;
     uint8_t time_10ms_flag : 1;
     uint8_t time_example : 1;
+    uint8_t time_pwm_is_on : 1;
+    uint8_t time_pwm_last_value;
+
   };
   
 } timer__union_u_t;
@@ -72,7 +76,7 @@ typedef union
 /****************************************************************************/
 
 /* Global variable declaration */
-
+extern volatile timer__union_u_t timer__data_u;
 /****************************************************************************/
 /*                  FUNCTIONS DECLARATIONS AND DEFINITIONS                  */
 /****************************************************************************/

@@ -216,7 +216,7 @@ void UART__Poll(void)
 
     if(RxBuffer[0] == 49 && RxBuffer[1] == 49)
     {
-      MOTORS__jazda_do_przodu();
+      MOTORS__jazda_do_tylu();
       GPIOA->ODR ^= (1 << 5);//toggle green led on PA5
     }
     else if(RxBuffer[0] == 49 && RxBuffer[1] == 48)
@@ -226,9 +226,6 @@ void UART__Poll(void)
     else if(RxBuffer[0] == 50 && RxBuffer[1] == 50)
     {
       MOTORS__jazda_zatrzymana();
-      //PWM wypelnienie 0
-//        analogWrite(5, 0);
-//        analogWrite(3, 0);
     }
     else if(RxBuffer[0] == 50 && RxBuffer[1] == 48)
     {
@@ -236,14 +233,16 @@ void UART__Poll(void)
     }
     else if(RxBuffer[0] == 50 && RxBuffer[1] == 53)
     {
-      MOTORS__jazda_do_tylu();
+      MOTORS__jazda_do_przodu();
     }
     else if(RxBuffer[0] == 37)
     {
-
-      uart__status_u.Pwm_value = RxBuffer[1];
-      TIMER__PWM_DC1_2_Change_Duty(uart__status_u.Pwm_value);
-      uart__status_u.sendPWMValue = 1;
+      if(!ADC__GetIsObstacleFlag())
+      {
+        uart__status_u.Pwm_value = RxBuffer[1];
+        TIMER__PWM_DC1_2_Change_Duty(uart__status_u.Pwm_value);
+        uart__status_u.sendPWMValue = 1;
+      }
 
     }
 
@@ -259,7 +258,6 @@ void UART__Poll(void)
 
       sprintf(data, "%d", (int)ADC__GetTempDegreeValue());
       UART__StartDmaTransmision(data, " *C", 5);
-      //UART__StartDmaTransmision("*C", 2);
 
     }
     else if(uart__status_u.sendSharp1)

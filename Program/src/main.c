@@ -43,7 +43,6 @@ extern "C"
 /* Global variable declaration */
 /* for example: extern unsigned int module_variable_1; */
 
-volatile uint8_t flag_1ms = 0;
 uint16_t counter = 0;
 volatile uint16_t error = 0;  //initialized at 0 and modified by the functions
 /****************************************************************************/
@@ -75,7 +74,7 @@ int main(void)
   UART__DMAConfig();
   UART__Init(UART__BAUDRATE_19200);
   GPIO__ConfigButton(1);
-
+  ADC__ResetIsObstacleFlag();
   MOTORS__jazda_zatrzymana();
   //Zezwolenie na przerwanie globalne
   //  __enable_irq(); // po resecie przerwania sa zalaczone z automatu
@@ -83,14 +82,9 @@ int main(void)
   while(1)
   {
 
-    if(flag_1ms)
+    if(timer__data_u.time_1ms_flag)
     {
-      flag_1ms = 0;
-      ADC__MeasureAllAdc();
-      if(ADC__GetSharp1MvValue() > 1000)
-      {
-        MOTORS__jazda_zatrzymana();
-      }
+      timer__data_u.time_1ms_flag = 0;
       counter++;
     }
 
@@ -101,12 +95,11 @@ int main(void)
       UART__SetVrefToSend();
       UART__SetIntTempToSend();
       UART__SetSharpLewyPrzodToSend();
-
-
       counter = 0;
     }
 
     UART__Poll();
+    ADC__Poll();
   }
 }
 
@@ -163,7 +156,15 @@ void PendSV_Handler(void)
  */
 void SysTick_Handler(void)
 {
-  flag_1ms = 1;
+  static uint8_t count_timer = 0;
+  timer__data_u.time_1ms_flag = 1;
+
+  count_timer++;
+  if(count_timer >= 5)
+  {
+    count_timer = 0;
+    timer__data_u.time_adc_5ms_flag = 1;
+  }
 }
 
 /******************************************************************************/

@@ -48,12 +48,26 @@ int16_t ADC__CalcTemperature(void);
 #define VREFINT_CAL_ADDR ((uint16_t*) ((uint32_t) 0x1FF80078))
  /*! Special adress which contain Vref calibrate value */
 #define NUMBER_OF_ADC_CHANNEL 4
+#define NUMBER_OF_SHARP (NUMBER_OF_ADC_CHANNEL - 2)
 
 
 #define ERROR_UNEXPECTED_ADC_IT 0x01
 /* Typedef definition */
 
+typedef enum adc_array
+{
+  SHARP_PRZOD_SRODEK = 0,
+  SHARP_PRZOD_LEWY,
+//  SHARP_PRZOD_PRAWY,
+//  SHARP_TYL_SRODEK,
+//  SHARP_TYL_LEWY,
+//  SHARP_TYL_PRAWY,
+//  SHARP_BOK_LEWY,
+//  SHARP_BOK_PRAWY,
+  VREF,
+  TEMPERATURA
 
+};
 /****************************************************************************/
 /*                         GLOBAL VARIABLE DECLARATION                      */
 /****************************************************************************/
@@ -93,6 +107,11 @@ int32_t ADC__GetTempAdcValue(void);
 int32_t ADC__GetTempDegreeValue(void);
 int32_t ADC__GetSharpPrzodLewyMvValue(void);
 
+void ADC__SetIsObstacleFlag(void);
+void ADC__ResetIsObstacleFlag(void);
+uint8_t ADC__GetIsObstacleFlag(void);
+
+void ADC__Poll(void);
 #ifdef __cplusplus
   }
 #endif
