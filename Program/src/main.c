@@ -95,6 +95,9 @@ int main(void)
       UART__SetVrefToSend();
       UART__SetIntTempToSend();
       UART__SetSharpLewyPrzodToSend();
+      UART__SetSharpPrawyPrzodToSend();
+      UART__SetSharpSrodekTylToSend();
+
       counter = 0;
     }
 
@@ -160,10 +163,10 @@ void SysTick_Handler(void)
   timer__data_u.time_1ms_flag = 1;
 
   count_timer++;
-  if(count_timer >= 5)
+  if(count_timer >= 2)
   {
     count_timer = 0;
-    timer__data_u.time_adc_5ms_flag = 1;
+    timer__data_u.time_adc_2ms_flag = 1;
   }
 }
 
@@ -266,7 +269,6 @@ void ADC1_COMP_IRQHandler(void)
         CurrentChannel = 0; /* Reinitialize the CurrentChannel */
         ADC__UpdateAdcStruct(ADC_array);
         ADC__DeInit();
-        GPIOB->ODR ^= (1<<5); /* Toggle green led on PB4 */
       }
     }
   }

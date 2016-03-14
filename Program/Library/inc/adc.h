@@ -47,7 +47,7 @@ int16_t ADC__CalcTemperature(void);
 /* Internal voltage reference calibration value address */
 #define VREFINT_CAL_ADDR ((uint16_t*) ((uint32_t) 0x1FF80078))
  /*! Special adress which contain Vref calibrate value */
-#define NUMBER_OF_ADC_CHANNEL 4
+#define NUMBER_OF_ADC_CHANNEL 6
 #define NUMBER_OF_SHARP (NUMBER_OF_ADC_CHANNEL - 2)
 
 
@@ -58,8 +58,8 @@ typedef enum adc_array
 {
   SHARP_PRZOD_SRODEK = 0,
   SHARP_PRZOD_LEWY,
-//  SHARP_PRZOD_PRAWY,
-//  SHARP_TYL_SRODEK,
+  SHARP_PRZOD_PRAWY,
+  SHARP_TYL_SRODEK,
 //  SHARP_TYL_LEWY,
 //  SHARP_TYL_PRAWY,
 //  SHARP_BOK_LEWY,
@@ -106,6 +106,8 @@ int32_t ADC__GetVrefAdcValue(void);
 int32_t ADC__GetTempAdcValue(void);
 int32_t ADC__GetTempDegreeValue(void);
 int32_t ADC__GetSharpPrzodLewyMvValue(void);
+int32_t ADC__GetSharpPrzodPrawyMvValue(void);
+int32_t ADC__GetSharpTylSrodekMvValue(void);
 
 void ADC__SetIsObstacleFlag(void);
 void ADC__ResetIsObstacleFlag(void);

@@ -43,6 +43,8 @@ static volatile union uart__status_u
     uint8_t sendInternalTemp: 1;
     uint8_t sendSharp1 : 1;
     uint8_t sendSharpPrzodLewy : 1;
+    uint8_t sendSharpPrzodPrawy : 1;
+    uint8_t sendSharpTylSrodek : 1;
     uint8_t sendVrefValue:1;
     uint8_t sendPWMValue:1;
     uint8_t flag5: 1;
@@ -278,6 +280,24 @@ void UART__Poll(void)
       UART__StartDmaTransmision(data," Sharp L Przod", 18);
 
     }
+    else if(uart__status_u.sendSharpPrzodPrawy)
+    {
+
+      uart__status_u.sendSharpPrzodPrawy = 0;
+
+      sprintf(data, "%d", (int)ADC__GetSharpPrzodPrawyMvValue());
+      UART__StartDmaTransmision(data," Sharp P Przod", 18);
+
+    }
+    else if(uart__status_u.sendSharpTylSrodek)
+    {
+
+      uart__status_u.sendSharpTylSrodek = 0;
+
+      sprintf(data, "%d", (int)ADC__GetSharpTylSrodekMvValue());
+      UART__StartDmaTransmision(data," Sharp S Tyl", 18);
+
+    }
     else if(uart__status_u.sendVrefValue)
     {
       uart__status_u.sendVrefValue = 0;
@@ -319,6 +339,19 @@ void UART__SetSharpLewyPrzodToSend(void)
   uart__status_u.sendSharpPrzodLewy = 1;
 }
 
+/******************************* END FUNCTION *********************************/
+
+void UART__SetSharpPrawyPrzodToSend(void)
+{
+  uart__status_u.sendSharpPrzodPrawy = 1;
+}
+
+/******************************* END FUNCTION *********************************/
+
+void UART__SetSharpSrodekTylToSend(void)
+{
+  uart__status_u.sendSharpTylSrodek = 1;
+}
 /******************************* END FUNCTION *********************************/
 
 void UART__SetVrefToSend(void)

@@ -42,8 +42,10 @@ static volatile struct
 	uint32_t vref_mv;     /*!< Vref value in [mV] */
 	int32_t temp_adc;    /*!< Temperature value in ADC */
 	int32_t temp_degree;  /*!< Temperature value in [mV] */
-	uint32_t sharp1_mv;
+	uint32_t sharp_przod_srodek_mv;
 	uint32_t sharp_przod_lewy_mv;
+	uint32_t sharp_przod_prawy_mv;
+	uint32_t sharp_tyl_srodek_mv;
 	uint16_t batt_mv;     /*!< Battery value in [mV] */
   
   uint32_t EE_Vref;
@@ -98,8 +100,8 @@ static void adc__Init(void)
          /* (8) Wait for VREFINT ADC buffer ready */
          //ADC1->CFGR2 &= ~ADC_CFGR2_CKMODE; /* (1) */
          ADC1->CFGR1 |= ADC_CFGR1_WAIT |ADC_CFGR1_CONT | ADC_CFGR1_SCANDIR; /* (2) */
-         ADC1->CHSELR = ADC_CHSELR_CHSEL10 | ADC_CHSELR_CHSEL11 \
-                      | ADC_CHSELR_CHSEL17 | ADC_CHSELR_CHSEL18; /* (3) */
+         ADC1->CHSELR = ADC_CHSELR_CHSEL10 | ADC_CHSELR_CHSEL11 | ADC_CHSELR_CHSEL12 \
+                      | ADC_CHSELR_CHSEL13 | ADC_CHSELR_CHSEL17 | ADC_CHSELR_CHSEL18; /* (3) */
          ADC1->SMPR |= ADC_SMPR_SMPR_0 | ADC_SMPR_SMPR_1 | ADC_SMPR_SMPR_2; /* (4) */
          ADC1->IER = ADC_IER_EOCIE | ADC_IER_EOSEQIE | ADC_IER_OVRIE; /* (5) */
          ADC->CCR |= ADC_CCR_VREFEN | ADC_CCR_TSEN;  /* (6) */
@@ -220,13 +222,8 @@ void ADC__DeInit(void)
 
 void ADC__MeasureAllAdc(void)
 {
-  if(!adc__data_s.isInitiated)
-  {
     adc__Init();
-  }
 
-  if(adc__data_s.isInitiated)
-  {
     if ((ADC1->CR & ADC_CR_ADSTART) != 0) /* Check if conversion on going */
     {
       ADC1->CR |= ADC_CR_ADSTP; /* Stop the sequence conversion */
@@ -238,7 +235,7 @@ void ADC__MeasureAllAdc(void)
       ADC1->CR |= ADC_CR_ADSTART; /* Restart the sequence conversion */
     }
 
-  }
+
 
 }
 
@@ -252,8 +249,10 @@ void ADC__UpdateAdcStruct(int32_t* data)
     adc__data_s.vref_adc = data[VREF];
     adc__data_s.vref_mv = ((adc__data_s.vdda_value * adc__data_s.vref_adc)/4095);
 
-    adc__data_s.sharp1_mv = ((adc__data_s.vdda_value *data[SHARP_PRZOD_SRODEK]) / 4095);
+    adc__data_s.sharp_przod_srodek_mv = ((adc__data_s.vdda_value *data[SHARP_PRZOD_SRODEK]) / 4095);
     adc__data_s.sharp_przod_lewy_mv = ((adc__data_s.vdda_value *data[SHARP_PRZOD_LEWY]) / 4095);
+    adc__data_s.sharp_przod_prawy_mv = ((adc__data_s.vdda_value *data[SHARP_PRZOD_PRAWY]) / 4095);
+    adc__data_s.sharp_tyl_srodek_mv = ((adc__data_s.vdda_value *data[SHARP_TYL_SRODEK]) / 4095);
 
     adc__data_s.temp_adc = data[TEMPERATURA];
     adc__data_s.temp_degree = adc__ConvertTemperature(adc__data_s.temp_adc);
@@ -268,7 +267,7 @@ void ADC__UpdateAdcStruct(int32_t* data)
 int32_t ADC__GetSharp1MvValue(void)
 {
 
-  return adc__data_s.sharp1_mv;
+  return adc__data_s.sharp_przod_srodek_mv;
 }
 /******************************* END FUNCTION *********************************/
 
@@ -278,7 +277,21 @@ int32_t ADC__GetSharpPrzodLewyMvValue(void)
   return adc__data_s.sharp_przod_lewy_mv;
 }
 
+/******************************* END FUNCTION *********************************/
 
+int32_t ADC__GetSharpPrzodPrawyMvValue(void)
+{
+
+  return adc__data_s.sharp_przod_prawy_mv;
+}
+
+/******************************* END FUNCTION *********************************/
+
+int32_t ADC__GetSharpTylSrodekMvValue(void)
+{
+
+  return adc__data_s.sharp_tyl_srodek_mv;
+}
 /******************************* END FUNCTION *********************************/
 
 int32_t ADC__GetVrefAdcValue(void)
@@ -332,11 +345,11 @@ void ADC__Poll(void)
 {
   uint8_t i = 0;
 
-  if(timer__data_u.time_adc_5ms_flag)
+  if(timer__data_u.time_adc_2ms_flag)
   {
-    timer__data_u.time_adc_5ms_flag = 0;
+    timer__data_u.time_adc_2ms_flag = 0;
 
-    if(!adc__data_s.end_adc_measure)
+    if(!adc__data_s.end_adc_measure && !adc__data_s.isInitiated)
     {
       ADC__MeasureAllAdc();
     }
@@ -344,17 +357,38 @@ void ADC__Poll(void)
     {
       adc__data_s.end_adc_measure = 0;
       // vref oraz temp zawsze musza byc na koncu, by ponizsze dzialalo
-      for(i = 0; i < 1;i++)//NUMBER_OF_SHARP; i++)
+      for(i = 0; i < NUMBER_OF_SHARP; i++)
       {
-        if(ADC_array[i] > 1400 && timer__data_u.time_pwm_is_on)
+        if(ADC_array[i] > 2300 && timer__data_u.time_pwm_is_on)
         {
           MOTORS__jazda_zatrzymana();
           switch(i)
           {
+            case SHARP_PRZOD_LEWY:
+            {
+              TIMER__PWM_DC1_2_Change_Duty(50);
+              MOTORS__jazda_do_tylu();
+              break;
+            }
+            case SHARP_PRZOD_PRAWY:
+            {
+              TIMER__PWM_DC1_2_Change_Duty(50);
+              MOTORS__jazda_do_tylu();
+
+              break;
+            }
+          }
+        }
+
+        if(ADC_array[i] > 1400 && timer__data_u.time_pwm_is_on)
+        {
+
+          switch(i)
+          {
             case SHARP_PRZOD_SRODEK:
             {
-
-              TIMER__PWM_DC1_2_Change_Duty(40);
+              MOTORS__jazda_zatrzymana();
+              TIMER__PWM_DC1_2_Change_Duty(50);
               MOTORS__jazda_do_tylu();
 
               //tutaj beda tylko flagi ustawiane i w innym pollingu bedzie wykonywane cofanie, omijanie
@@ -362,16 +396,29 @@ void ADC__Poll(void)
             }
             case SHARP_PRZOD_LEWY:
             {
+              TIMER__PWM_DC1_2_Change_Duty(40);
+              break;
+            }
+            case SHARP_PRZOD_PRAWY:
+            {
+              TIMER__PWM_DC1_2_Change_Duty(40);
 
+              break;
+            }
+            case SHARP_TYL_SRODEK:
+            {
+              MOTORS__jazda_zatrzymana();
+              TIMER__PWM_DC1_2_Change_Duty(50);
+              MOTORS__jazda_do_przodu();
               break;
             }
           }
         }
         else if(ADC_array[i] > 800)
         {
-          if(timer__data_u.time_pwm_last_value > 40)
+          if(timer__data_u.time_pwm_last_value > 50)
           {
-            TIMER__PWM_DC1_2_Change_Duty(40);
+            TIMER__PWM_DC1_2_Change_Duty(50);
           }
 
           adc__data_s.is_Obstacle = 1;
@@ -379,15 +426,16 @@ void ADC__Poll(void)
 
         else if(ADC_array[i] > 500)
         {
-          if(timer__data_u.time_pwm_last_value > 60)
+          if(timer__data_u.time_pwm_last_value > 70)
           {
-            TIMER__PWM_DC1_2_Change_Duty(60);
+            TIMER__PWM_DC1_2_Change_Duty(70);
           }
           adc__data_s.is_Obstacle = 1;
         }
         else
         {
           adc__data_s.is_Obstacle = 0;
+          //zmienic bo gdy jeden czujnik jest ok to kas7uuje
         }
       }
     }

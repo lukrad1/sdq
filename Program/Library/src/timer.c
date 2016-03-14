@@ -147,12 +147,21 @@ void TIMER__PWM_DC1_2_Change_Duty(uint8_t duty_in_percent)
           select direction as upcounter (DIR = 0, reset value) */
    /* (8) Force update generation (UG = 1) */
 
-  TIMER__PWM_DC1_2_ALL_OFF();
+  if(timer__data_u.time_pwm_is_on)
+  {
+    TIMER__PWM_DC1_2_ALL_OFF();
 
-  TIMx->CCR1 = duty_in_percent; /* (3) */
-  TIMx->CCR2 = duty_in_percent; /* (3) */
+    TIMx->CCR1 = duty_in_percent; /* (3) */
+    TIMx->CCR2 = duty_in_percent; /* (3) */
 
-  TIMER__PWM_DC1_2_ON();
+    TIMER__PWM_DC1_2_ON();
+  }
+  else
+  {
+    TIMx->CCR1 = duty_in_percent; /* (3) */
+    TIMx->CCR2 = duty_in_percent; /* (3) */
+  }
+
 
   timer__data_u.time_pwm_last_value = duty_in_percent;
 }

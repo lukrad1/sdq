@@ -88,6 +88,9 @@ void UART__SetIntTempToSend(void);
 void UART__SetSharp1ToSend(void);
 void UART__SetVrefToSend(void);
 void UART__SetSharpLewyPrzodToSend(void);
+void UART__SetSharpPrawyPrzodToSend(void);
+void UART__SetSharpSrodekTylToSend(void);
+
 #ifdef __cplusplus
   }
 #endif
