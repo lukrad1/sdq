@@ -243,19 +243,55 @@ void ADC__MeasureAllAdc(void)
 
 void ADC__UpdateAdcStruct(int32_t* data)
 {
+    static uint8_t vdd_vref_measure = 0;
 
-    adc__data_s.vdda_value = (3*1000*adc__data_s.vrefcalib_value/data[VREF]);
+    static uint8_t number_of_sample = 0;
+    static uint32_t sharp_przod_srodek_temp = 0;
+    static uint32_t sharp_przod_lewy_temp = 0;
+    static uint32_t sharp_przod_prawy_temp = 0;
+    static uint32_t sharp_tyl_srodek_temp = 0;
 
-    adc__data_s.vref_adc = data[VREF];
-    adc__data_s.vref_mv = ((adc__data_s.vdda_value * adc__data_s.vref_adc)/4095);
 
-    adc__data_s.sharp_przod_srodek_mv = ((adc__data_s.vdda_value *data[SHARP_PRZOD_SRODEK]) / 4095);
-    adc__data_s.sharp_przod_lewy_mv = ((adc__data_s.vdda_value *data[SHARP_PRZOD_LEWY]) / 4095);
-    adc__data_s.sharp_przod_prawy_mv = ((adc__data_s.vdda_value *data[SHARP_PRZOD_PRAWY]) / 4095);
-    adc__data_s.sharp_tyl_srodek_mv = ((adc__data_s.vdda_value *data[SHARP_TYL_SRODEK]) / 4095);
+    number_of_sample++;
+    if(!vdd_vref_measure)
+    {
+      vdd_vref_measure = 1; // tylko raz podczas dzialania programu bedzie dokonany pomiar vref
+      adc__data_s.vdda_value = (3*1000*adc__data_s.vrefcalib_value/data[VREF]);
+
+      adc__data_s.vref_adc = data[VREF];
+      adc__data_s.vref_mv = ((adc__data_s.vdda_value * adc__data_s.vref_adc)/4095);
+    }
 
     adc__data_s.temp_adc = data[TEMPERATURA];
     adc__data_s.temp_degree = adc__ConvertTemperature(adc__data_s.temp_adc);
+
+    sharp_przod_srodek_temp += data[SHARP_PRZOD_SRODEK];
+    sharp_przod_lewy_temp += data[SHARP_PRZOD_LEWY];
+    sharp_przod_prawy_temp += data[SHARP_PRZOD_PRAWY];
+    sharp_tyl_srodek_temp += data[SHARP_TYL_SRODEK];
+
+
+
+    if(number_of_sample >= 32)
+    {
+      number_of_sample = 0;
+
+      adc__data_s.sharp_przod_srodek_mv = ((adc__data_s.vdda_value *
+                                          (sharp_przod_srodek_temp>>5)) / 4095);
+      adc__data_s.sharp_przod_lewy_mv = ((adc__data_s.vdda_value *
+                                          (sharp_przod_lewy_temp>>5)) / 4095);
+      adc__data_s.sharp_przod_prawy_mv = ((adc__data_s.vdda_value *
+                                          (sharp_przod_prawy_temp>>5)) / 4095);
+      adc__data_s.sharp_tyl_srodek_mv = ((adc__data_s.vdda_value *
+                                          (sharp_tyl_srodek_temp>>5)) / 4095);
+
+      sharp_przod_srodek_temp = 0;
+      sharp_przod_lewy_temp = 0;
+      sharp_przod_prawy_temp = 0;
+      sharp_tyl_srodek_temp = 0;
+
+    }
+
 
     adc__data_s.end_adc_measure = 1;
 
@@ -344,11 +380,13 @@ uint8_t ADC__GetIsObstacleFlag(void)
 void ADC__Poll(void)
 {
   uint8_t i = 0;
+  uint8_t counter = 0;
 
   if(timer__data_u.time_adc_2ms_flag)
   {
     timer__data_u.time_adc_2ms_flag = 0;
 
+    // deinicjalizacja jest po pomiarach
     if(!adc__data_s.end_adc_measure && !adc__data_s.isInitiated)
     {
       ADC__MeasureAllAdc();
@@ -359,36 +397,14 @@ void ADC__Poll(void)
       // vref oraz temp zawsze musza byc na koncu, by ponizsze dzialalo
       for(i = 0; i < NUMBER_OF_SHARP; i++)
       {
-        if(ADC_array[i] > 2300 && timer__data_u.time_pwm_is_on)
+        if(ADC_array[i] > 2500 && timer__data_u.time_pwm_is_on)
         {
           MOTORS__jazda_zatrzymana();
           switch(i)
           {
-            case SHARP_PRZOD_LEWY:
-            {
-              TIMER__PWM_DC1_2_Change_Duty(50);
-              MOTORS__jazda_do_tylu();
-              break;
-            }
-            case SHARP_PRZOD_PRAWY:
-            {
-              TIMER__PWM_DC1_2_Change_Duty(50);
-              MOTORS__jazda_do_tylu();
-
-              break;
-            }
-          }
-        }
-
-        if(ADC_array[i] > 1400 && timer__data_u.time_pwm_is_on)
-        {
-
-          switch(i)
-          {
             case SHARP_PRZOD_SRODEK:
             {
-              MOTORS__jazda_zatrzymana();
-              TIMER__PWM_DC1_2_Change_Duty(50);
+              TIMER__PWM_DC1_2_Change_Duty(40);
               MOTORS__jazda_do_tylu();
 
               //tutaj beda tylko flagi ustawiane i w innym pollingu bedzie wykonywane cofanie, omijanie
@@ -397,24 +413,34 @@ void ADC__Poll(void)
             case SHARP_PRZOD_LEWY:
             {
               TIMER__PWM_DC1_2_Change_Duty(40);
+              MOTORS__jazda_do_tylu();
               break;
             }
             case SHARP_PRZOD_PRAWY:
             {
               TIMER__PWM_DC1_2_Change_Duty(40);
+              MOTORS__jazda_do_tylu();
 
               break;
             }
             case SHARP_TYL_SRODEK:
             {
-              MOTORS__jazda_zatrzymana();
-              TIMER__PWM_DC1_2_Change_Duty(50);
+              TIMER__PWM_DC1_2_Change_Duty(40);
               MOTORS__jazda_do_przodu();
               break;
             }
           }
         }
-        else if(ADC_array[i] > 800)
+        else if(ADC_array[i] > 2400)
+        {
+          if(timer__data_u.time_pwm_last_value > 40)
+          {
+            TIMER__PWM_DC1_2_Change_Duty(40);
+          }
+
+          adc__data_s.is_Obstacle = 1;
+        }
+        else if(ADC_array[i] > 2100)
         {
           if(timer__data_u.time_pwm_last_value > 50)
           {
@@ -424,20 +450,25 @@ void ADC__Poll(void)
           adc__data_s.is_Obstacle = 1;
         }
 
-        else if(ADC_array[i] > 500)
+        else if(ADC_array[i] > 1800)
         {
-          if(timer__data_u.time_pwm_last_value > 70)
+          if(timer__data_u.time_pwm_last_value > 80)
           {
-            TIMER__PWM_DC1_2_Change_Duty(70);
+            TIMER__PWM_DC1_2_Change_Duty(80);
           }
           adc__data_s.is_Obstacle = 1;
         }
         else
         {
-          adc__data_s.is_Obstacle = 0;
-          //zmienic bo gdy jeden czujnik jest ok to kas7uuje
+          counter++;
         }
       }
+
+      if(counter >= NUMBER_OF_SHARP)
+      {
+        adc__data_s.is_Obstacle = 0;
+      }
+      //counter kasowany automatyczznie bo zmienna lokalna
     }
   }
 }

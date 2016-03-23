@@ -91,12 +91,12 @@ int main(void)
     if(counter >= 3000)
     {
 
-      UART__SetSharp1ToSend();
-      UART__SetVrefToSend();
+//      UART__SetSharp1ToSend();
+//      UART__SetVrefToSend();
       UART__SetIntTempToSend();
-      UART__SetSharpLewyPrzodToSend();
-      UART__SetSharpPrawyPrzodToSend();
-      UART__SetSharpSrodekTylToSend();
+//      UART__SetSharpLewyPrzodToSend();
+//      UART__SetSharpPrawyPrzodToSend();
+//      UART__SetSharpSrodekTylToSend();
 
       counter = 0;
     }

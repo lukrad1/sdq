@@ -143,15 +143,17 @@ read from this memory after the peripheral event.*/
 void UART__StartDmaTransmision(int8_t* data, int8_t* additional_text, uint8_t length)
 {
   int i,j,h = 0;
-  length += 2; // na znak konca lini
+  length += 4; // na znak konca lini i bit startu
   if(length > 20)
   {
     length = 20;
   }
-  for(i = 0; i < (length - 2); i++)
+  stringtosend[0] = 0x02; // start byte
+  stringtosend[1] = 84; // T
+  for(i = 2; i < (length - 2); i++)
   {
-    stringtosend[i] = data[i];
-    if(data[i] == 0)
+    stringtosend[i] = data[i-2];
+    if(data[i-2] == 0)
     {
       for(j = i; j < (length - 2); j++)
       {
@@ -243,7 +245,7 @@ void UART__Poll(void)
       {
         uart__status_u.Pwm_value = RxBuffer[1];
         TIMER__PWM_DC1_2_Change_Duty(uart__status_u.Pwm_value);
-        uart__status_u.sendPWMValue = 1;
+        //uart__status_u.sendPWMValue = 1;
       }
 
     }
@@ -259,7 +261,7 @@ void UART__Poll(void)
       uart__status_u.sendInternalTemp = 0;
 
       sprintf(data, "%d", (int)ADC__GetTempDegreeValue());
-      UART__StartDmaTransmision(data, " *C", 5);
+      UART__StartDmaTransmision(data, "", 2);
 
     }
     else if(uart__status_u.sendSharp1)

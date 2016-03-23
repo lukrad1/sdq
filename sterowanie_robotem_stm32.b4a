@@ -5,9 +5,10 @@ Package=sterowanie_robotem.btm
 DoNotOverwriteManifest=False
 ManifestCode='This code will be applied to the manifest file during compilation.~\n~'You do not need to modify it in most cases.~\n~'See this link for for more information: http://www.basic4ppc.com/forum/showthread.php?p=78136~\n~AddManifestText(~\n~<uses-sdk android:minSdkVersion="4" android:targetSdkVersion="14"/>~\n~<supports-screens android:largeScreens="true" ~\n~    android:normalScreens="true" ~\n~    android:smallScreens="true" ~\n~    android:anyDensity="true"/>)~\n~SetApplicationAttribute(android:icon, "@drawable/icon")~\n~SetApplicationAttribute(android:label, "$LABEL$")~\n~'End of default text.~\n~
 UserTypesHint=
-NumberOfFiles=2
+NumberOfFiles=3
 File1=robot_design.bal
-File2=sterowanie_bramami.bal
+File2=robot_stm32.bal
+File3=sterowanie_bramami.bal
 NumberOfLibraries=4
 Library1=core
 Library2=phone
@@ -42,6 +43,7 @@ Sub Globals
 	Dim Label2 As Label
 	Dim Label3 As Label
 	Dim Label4 As Label
+	Dim Label5 As Label
 	Dim Button1 As Button
 	Dim Button2 As Button
 	Dim Button3 As Button
@@ -52,6 +54,7 @@ Sub Globals
 	Dim Timer1 As Timer		'zmienna pomocnicza określająca timer = definicja zmiennej timer'
 	Dim Timer2 As Timer
 	Dim Timer3 As Timer
+	Dim Timer4 As Timer
 	Dim Flaga As Boolean	'zmienna pomocnicza oznaczająca, czy połączenie się powiodło czy też nie'
 	Dim Ekran As PhoneWakeState	'zmienna wykorzystana do podtrzymania podświetlenia ekranu'
 	Dim SeekBar1 As SeekBar
@@ -59,7 +62,11 @@ Sub Globals
 	
 	Dim xx As Int
  	Dim yy As Int
- 
+ 	Dim PWM_last_Value As Long
+	Dim Temperatura_C(4) As Byte
+	Dim Finish_New_Data As Boolean
+	Dim Index_New_Data As Int
+	
 	Dim Zmiana As Boolean
 	Dim Checkbox1 As CheckBox
 	Dim Strumien As AsyncStreams 'wymagany moduł RandomAccessFile
@@ -114,6 +121,15 @@ Sub Activity_Create(FirstTime As Boolean)
 	Label4.Gravity = Gravity.CENTER_HORIZONTAL + Gravity.CENTER_VERTICAL 'linia centrująca wyświetlaną wartość, u nas wartość seekBar1'
 	Label4.TextSize = Label2.TextSize * 1 'Powiększenie czcionki oryginalnej dwukrotnie'
 	Label4.Text = "Kąt położenia urządzenia: 0"
+	
+	'**********************************************************************************************************************'
+	
+	Label5.Width = Activity.Width/3		'ten przycisk ma szerokość całego okna programu'
+	Label5.Height = Activity.Height/6	'ponieważ mam mieć w oknie 7 przycisków w pionie, więc pierwszy ma wysokość 1/7 okna'
+	Label5.Top = (Activity.Height/6) * 3'polozenie tej etykiety od gory to zero, czyli od samej gory okna programu'
+	Label5.Left = (Activity.Width/3) * 0'tak samo jest z polozeniem od lewej strony ekranu, 0 czyli przy oknie'
+	Label5.TextSize = Label2.TextSize * 1 'Powiększenie czcionki oryginalnej dwukrotnie'
+	Label5.Text = "Stopnie *C"
 	
 	'**********************************************************************************************************************'
 	
@@ -196,6 +212,10 @@ Sub Activity_Create(FirstTime As Boolean)
 	'**********************************************************************************************************************'
 	xx = -1
 	yy = -1
+
+	PWM_last_Value = 0
+	
+	Finish_New_Data = False
 	'**********************************************************************************************************************'
 	Timer1.Initialize("Timer1", 100)	'inicjalizacja timera pracą na 100 ms'
 	Timer1.Enabled = True				'włączenie timera'
@@ -205,6 +225,11 @@ Sub Activity_Create(FirstTime As Boolean)
 	Timer3.Initialize("Timer3", 2000)
  	Timer3.Enabled=False
 	Flaga = False
+	
+	Timer4.Initialize("Timer4", 3000)
+ 	Timer4.Enabled=False
+	
+	
 	 
 	Ekran.KeepAlive(True)				'załączenie opcji ciągłego podświetlania ekranu'
 
@@ -260,6 +285,7 @@ Sub Timer2_Tick
 End Sub
 
 Sub Timer3_tick
+
  If Zmiana=True Then
   If xx >= 0  AND yy >= 0 Then
   	If xx >= 65 Then
@@ -317,6 +343,16 @@ Sub Timer3_tick
  End If
 End Sub
 
+Sub Timer4_tick
+	If Nadawanie = True Then			'jeżeli mamy połączenie to spróbuj wysłać dane'
+				
+		Rozkaz(0 + 2) 'bit startu
+		Rozkaz(37)	'it is sign % in ASCI'
+		Rozkaz(PWM_last_Value)
+		Rozkaz(13)
+		Rozkaz(10)
+	End If
+End Sub
 Sub Strumien_Error
  Adapter.Disconnect
  Flaga=False
@@ -329,15 +365,42 @@ End Sub
 
 Sub Strumien_NewData (Buffer() As Byte) 'funkcja odbioru danych strumieniowych, automatycznie wywoływana z parametrem w postaci tablicy bajtów'
  'znaki wysyłane z AVR powinny być zakodowane w ASCII czyli dla liczby 0 = chr(48)'
- Dim x As String
+ Dim text As String
+ Dim x As Int
+ Dim start As Int
+ 
  Nadawanie = False
- x=BytesToString(Buffer, 0, Buffer.Length, "UTF8") 'przekształcenie bajtów na łańcuch znakowy'
+
  Try
-  x=Bit.ToBinaryString(x)							'przekształcenie łańcucha znakowego na postać binarną np jeżeli"5" to mamy 101, gdy "2" 10'
-  x=NumberFormat(x, 6 ,0)	'ponieważ potrzebna jest informacja o trzech bitach więc dopisujemy sami sobie zera z przodu, dzięki temu gdy nadleci "2" to mamy 010'
+  'x=Bit.ToBinaryString(x)							'przekształcenie łańcucha znakowego na postać binarną np jeżeli"5" to mamy 101, gdy "2" 10'
+  'x=NumberFormat(x, 6 ,0)	'ponieważ potrzebna jest informacja o trzech bitach więc dopisujemy sami sobie zera z przodu, dzięki temu gdy nadleci "2" to mamy 010'
   
+  For i = 0 To (Buffer.Length-1)
+  	x = Buffer.Length
+	  If Buffer(i) = 0x02 Then	'start bit'
+	  	start = 1
+		Index_New_Data = 0
+		Finish_New_Data = False
+	  Else If Buffer(i) = 0x0A Then
+	  	start = 0
+		Finish_New_Data = True
+		
+	  End If
+	  
+	  If start = 1 Then
+	  	Temperatura_C(Index_New_Data) = Buffer(i)
+		Index_New_Data = Index_New_Data + 1
+	  End If
+  Next
  Catch
  End Try
+ 
+ i = 0
+ If Finish_New_Data = True Then
+ 	Finish_New_Data = False
+	text = BytesToString(Temperatura_C, 2,(Temperatura_C.Length-2), "UTF8")  'przekształcenie bajtów na łańcuch znakowy'
+ 	Label5.text = "Temp: " & text & " *C"
+ End If
  Nadawanie = True ' Po zaznaczeniu zezwalamy na nadawanie rozkazów od zmiany button przez ustawienie zmiennej Nadawanie na True. '
 End Sub
 
@@ -373,6 +436,7 @@ End Sub
 Sub Adapter_Connected (Powodzenie As Boolean)	'funkcja łączenia bluetooth'
  Timer2.Enabled = False
  Timer1.Enabled=True							' jeżeli połączono to ustawi flagę pomocniczą na true'
+ Timer4.Enabled=True
  Flaga=Powodzenie
  If Flaga=True Then								
   Strumien.Initialize(Adapter.InputStream,Adapter.OutputStream,"Strumien")	'jeżeli mamy połączenie to inicjalizujemy strumień przesyłania danych'
@@ -526,6 +590,7 @@ Sub Button6_Click
 		Button3.Enabled=True
 		Button4.Enabled=True
 		Button5.Enabled=True
+		Timer4.Enabled=False
 		Strumien.Close
 		Adapter.Disconnect
  		Flaga=False
@@ -557,6 +622,7 @@ End Sub
 Sub SeekBar1_ValueChanged (Value As Long, UserChanged As Boolean)
 	If UserChanged Then
 	Value = ((Value*100)/255)
+	PWM_last_Value = Value
 	Label3.Text ="PWM = " & NumberFormat(Value,0,0)
 		If Nadawanie = True Then			'jeżeli mamy połączenie to spróbuj wysłać dane'
 			
