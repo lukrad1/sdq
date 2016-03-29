@@ -5,10 +5,8 @@ Package=sterowanie_robotem.btm
 DoNotOverwriteManifest=False
 ManifestCode='This code will be applied to the manifest file during compilation.~\n~'You do not need to modify it in most cases.~\n~'See this link for for more information: http://www.basic4ppc.com/forum/showthread.php?p=78136~\n~AddManifestText(~\n~<uses-sdk android:minSdkVersion="4" android:targetSdkVersion="14"/>~\n~<supports-screens android:largeScreens="true" ~\n~    android:normalScreens="true" ~\n~    android:smallScreens="true" ~\n~    android:anyDensity="true"/>)~\n~SetApplicationAttribute(android:icon, "@drawable/icon")~\n~SetApplicationAttribute(android:label, "$LABEL$")~\n~'End of default text.~\n~
 UserTypesHint=
-NumberOfFiles=3
+NumberOfFiles=1
 File1=robot_design.bal
-File2=robot_stm32.bal
-File3=sterowanie_bramami.bal
 NumberOfLibraries=4
 Library1=core
 Library2=phone
@@ -44,6 +42,7 @@ Sub Globals
 	Dim Label3 As Label
 	Dim Label4 As Label
 	Dim Label5 As Label
+	Dim Label6 As Label
 	Dim Button1 As Button
 	Dim Button2 As Button
 	Dim Button3 As Button
@@ -130,6 +129,15 @@ Sub Activity_Create(FirstTime As Boolean)
 	Label5.Left = (Activity.Width/3) * 0'tak samo jest z polozeniem od lewej strony ekranu, 0 czyli przy oknie'
 	Label5.TextSize = Label2.TextSize * 1 'Powiększenie czcionki oryginalnej dwukrotnie'
 	Label5.Text = "Stopnie *C"
+
+	'**********************************************************************************************************************'
+	
+	Label6.Width = Activity.Width/3		'ten przycisk ma szerokość całego okna programu'
+	Label6.Height = Activity.Height/6	'ponieważ mam mieć w oknie 7 przycisków w pionie, więc pierwszy ma wysokość 1/7 okna'
+	Label6.Top = (Activity.Height/6) * 3'polozenie tej etykiety od gory to zero, czyli od samej gory okna programu'
+	Label6.Left = (Activity.Width/3) * 2'tak samo jest z polozeniem od lewej strony ekranu, 0 czyli przy oknie'
+	Label6.TextSize = Label2.TextSize * 1 'Powiększenie czcionki oryginalnej dwukrotnie'
+	Label6.Text = "Sharpy"
 	
 	'**********************************************************************************************************************'
 	
@@ -370,7 +378,7 @@ Sub Strumien_NewData (Buffer() As Byte) 'funkcja odbioru danych strumieniowych, 
  Dim start As Int
  
  Nadawanie = False
-
+ 
  Try
   'x=Bit.ToBinaryString(x)							'przekształcenie łańcucha znakowego na postać binarną np jeżeli"5" to mamy 101, gdy "2" 10'
   'x=NumberFormat(x, 6 ,0)	'ponieważ potrzebna jest informacja o trzech bitach więc dopisujemy sami sobie zera z przodu, dzięki temu gdy nadleci "2" to mamy 010'
@@ -381,7 +389,7 @@ Sub Strumien_NewData (Buffer() As Byte) 'funkcja odbioru danych strumieniowych, 
 	  	start = 1
 		Index_New_Data = 0
 		Finish_New_Data = False
-	  Else If Buffer(i) = 0x0A Then
+	  Else If Buffer(i) = 0x0A AND start = 1 Then
 	  	start = 0
 		Finish_New_Data = True
 		
@@ -398,8 +406,29 @@ Sub Strumien_NewData (Buffer() As Byte) 'funkcja odbioru danych strumieniowych, 
  i = 0
  If Finish_New_Data = True Then
  	Finish_New_Data = False
-	text = BytesToString(Temperatura_C, 2,(Temperatura_C.Length-2), "UTF8")  'przekształcenie bajtów na łańcuch znakowy'
- 	Label5.text = "Temp: " & text & " *C"
+	
+	If Temperatura_C(1) = 0x54 Then 'T'
+	
+		text = BytesToString(Temperatura_C, 2,(Temperatura_C.Length-2), "UTF8")  'przekształcenie bajtów na łańcuch znakowy'
+ 		Label5.text = "Temp: " & text & " *C"
+	Else If Temperatura_C(1) = 0x41 Then	'A'
+		text = "Sharp PLewy"
+		Label6.text = text
+	Else If Temperatura_C(1) = 0x42 Then	'B'
+		text = "Sharp PSrodek"
+		Label6.text = text
+	Else If Temperatura_C(1) = 0x43 Then	'C'
+		text = "Sharp PPrawy"
+		Label6.text = text
+	Else If Temperatura_C(1) = 0x45 Then	'E'
+		text = "Sharp TSrodek"
+		Label6.text = text
+	
+	End If
+	
+ 'For i = 0 To (Temperatura_C.Length-1)
+ '	Temperatura_C(i) = 0
+ 'Next
  End If
  Nadawanie = True ' Po zaznaczeniu zezwalamy na nadawanie rozkazów od zmiany button przez ustawienie zmiennej Nadawanie na True. '
 End Sub

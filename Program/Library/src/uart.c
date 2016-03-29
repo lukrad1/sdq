@@ -140,7 +140,8 @@ read from this memory after the peripheral event.*/
 
 }
 
-void UART__StartDmaTransmision(int8_t* data, int8_t* additional_text, uint8_t length)
+void UART__StartDmaTransmision(int8_t* data, int8_t* additional_text,
+                               uint8_t length, int8_t* message)
 {
   int i,j,h = 0;
   length += 4; // na znak konca lini i bit startu
@@ -149,7 +150,7 @@ void UART__StartDmaTransmision(int8_t* data, int8_t* additional_text, uint8_t le
     length = 20;
   }
   stringtosend[0] = 0x02; // start byte
-  stringtosend[1] = 84; // T
+  stringtosend[1] = message[0]; // T
   for(i = 2; i < (length - 2); i++)
   {
     stringtosend[i] = data[i-2];
@@ -261,7 +262,7 @@ void UART__Poll(void)
       uart__status_u.sendInternalTemp = 0;
 
       sprintf(data, "%d", (int)ADC__GetTempDegreeValue());
-      UART__StartDmaTransmision(data, "", 2);
+      UART__StartDmaTransmision(data, "", 2,"T");
 
     }
     else if(uart__status_u.sendSharp1)
@@ -270,7 +271,7 @@ void UART__Poll(void)
       uart__status_u.sendSharp1 = 0;
 
       sprintf(data, "%d", (int)ADC__GetSharp1MvValue());
-      UART__StartDmaTransmision(data," Sharp1_mV", 11);
+      UART__StartDmaTransmision(data," Sharp1_mV", 11,"B");
 
     }
     else if(uart__status_u.sendSharpPrzodLewy)
@@ -279,7 +280,7 @@ void UART__Poll(void)
       uart__status_u.sendSharpPrzodLewy = 0;
 
       sprintf(data, "%d", (int)ADC__GetSharpPrzodLewyMvValue());
-      UART__StartDmaTransmision(data," Sharp L Przod", 18);
+      UART__StartDmaTransmision(data," Sharp L Przod", 18,"A");
 
     }
     else if(uart__status_u.sendSharpPrzodPrawy)
@@ -288,7 +289,7 @@ void UART__Poll(void)
       uart__status_u.sendSharpPrzodPrawy = 0;
 
       sprintf(data, "%d", (int)ADC__GetSharpPrzodPrawyMvValue());
-      UART__StartDmaTransmision(data," Sharp P Przod", 18);
+      UART__StartDmaTransmision(data," Sharp P Przod", 18,"C");
 
     }
     else if(uart__status_u.sendSharpTylSrodek)
@@ -297,7 +298,7 @@ void UART__Poll(void)
       uart__status_u.sendSharpTylSrodek = 0;
 
       sprintf(data, "%d", (int)ADC__GetSharpTylSrodekMvValue());
-      UART__StartDmaTransmision(data," Sharp S Tyl", 18);
+      UART__StartDmaTransmision(data," Sharp S Tyl", 18,"E");
 
     }
     else if(uart__status_u.sendVrefValue)
@@ -305,14 +306,14 @@ void UART__Poll(void)
       uart__status_u.sendVrefValue = 0;
 
       sprintf(data, "%d", (int)ADC__GetVrefAdcValue());
-      UART__StartDmaTransmision(data," Vref", 9);
+      UART__StartDmaTransmision(data," Vref", 9,"V");
 
     }
     else if(uart__status_u.sendPWMValue)
     {
       uart__status_u.sendPWMValue = 0;
       sprintf(data, "%d", (int)uart__status_u.Pwm_value);
-      UART__StartDmaTransmision(data, " PWM value", 12);
+      UART__StartDmaTransmision(data, " PWM value", 12,"P");
     }
 
    }

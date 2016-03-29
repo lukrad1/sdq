@@ -406,7 +406,7 @@ void ADC__Poll(void)
             {
               TIMER__PWM_DC1_2_Change_Duty(40);
               MOTORS__jazda_do_tylu();
-
+              UART__SetSharp1ToSend();
               //tutaj beda tylko flagi ustawiane i w innym pollingu bedzie wykonywane cofanie, omijanie
               break;
             }
@@ -414,12 +414,14 @@ void ADC__Poll(void)
             {
               TIMER__PWM_DC1_2_Change_Duty(40);
               MOTORS__jazda_do_tylu();
+              UART__SetSharpLewyPrzodToSend();
               break;
             }
             case SHARP_PRZOD_PRAWY:
             {
               TIMER__PWM_DC1_2_Change_Duty(40);
               MOTORS__jazda_do_tylu();
+              UART__SetSharpPrawyPrzodToSend();
 
               break;
             }
@@ -427,6 +429,7 @@ void ADC__Poll(void)
             {
               TIMER__PWM_DC1_2_Change_Duty(40);
               MOTORS__jazda_do_przodu();
+              UART__SetSharpSrodekTylToSend();
               break;
             }
           }
