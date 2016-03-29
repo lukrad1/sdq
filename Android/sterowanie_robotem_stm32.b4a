@@ -1,17 +1,20 @@
 ﻿Version=2.5
 IconFile=
-NumberOfModules=0
+NumberOfModules=1
+Module1=AsyncStreamsText
+ModuleVisible1=1
 Package=sterowanie_robotem.btm
 DoNotOverwriteManifest=False
 ManifestCode='This code will be applied to the manifest file during compilation.~\n~'You do not need to modify it in most cases.~\n~'See this link for for more information: http://www.basic4ppc.com/forum/showthread.php?p=78136~\n~AddManifestText(~\n~<uses-sdk android:minSdkVersion="4" android:targetSdkVersion="14"/>~\n~<supports-screens android:largeScreens="true" ~\n~    android:normalScreens="true" ~\n~    android:smallScreens="true" ~\n~    android:anyDensity="true"/>)~\n~SetApplicationAttribute(android:icon, "@drawable/icon")~\n~SetApplicationAttribute(android:label, "$LABEL$")~\n~'End of default text.~\n~
-UserTypesHint=
+UserTypesHint=AsyncStreamsText
 NumberOfFiles=1
 File1=robot_design.bal
-NumberOfLibraries=4
-Library1=core
-Library2=phone
-Library3=randomaccessfile
-Library4=serial
+NumberOfLibraries=5
+Library1=byteconverter
+Library2=core
+Library3=phone
+Library4=randomaccessfile
+Library5=serial
 @EndOfDesignText@
 #Region  Project Attributes 
 	#ApplicationLabel: Sterowanie robotem mobilnym2
@@ -69,6 +72,7 @@ Sub Globals
 	Dim Zmiana As Boolean
 	Dim Checkbox1 As CheckBox
 	Dim Strumien As AsyncStreams 'wymagany moduł RandomAccessFile
+	Dim ast As AsyncStreamsText 'wymagany moduł RandomAccessFile
 	Dim Nadawanie As Boolean	'zmienna globalna stworzona do wysyłania danych'
 	Dim Timer3_help As Boolean
 	Dim Rotacja As Phone
@@ -353,7 +357,6 @@ End Sub
 
 Sub Timer4_tick
 	If Nadawanie = True Then			'jeżeli mamy połączenie to spróbuj wysłać dane'
-				
 		Rozkaz(0 + 2) 'bit startu
 		Rozkaz(37)	'it is sign % in ASCI'
 		Rozkaz(PWM_last_Value)
@@ -370,69 +373,50 @@ Sub Strumien_Terminated
  Adapter.Disconnect
  Flaga=False
 End Sub
-
 Sub Strumien_NewData (Buffer() As Byte) 'funkcja odbioru danych strumieniowych, automatycznie wywoływana z parametrem w postaci tablicy bajtów'
- 'znaki wysyłane z AVR powinny być zakodowane w ASCII czyli dla liczby 0 = chr(48)'
- Dim text As String
- Dim x As Int
- Dim start As Int
- 
- Nadawanie = False
- 
- Try
-  'x=Bit.ToBinaryString(x)							'przekształcenie łańcucha znakowego na postać binarną np jeżeli"5" to mamy 101, gdy "2" 10'
-  'x=NumberFormat(x, 6 ,0)	'ponieważ potrzebna jest informacja o trzech bitach więc dopisujemy sami sobie zera z przodu, dzięki temu gdy nadleci "2" to mamy 010'
-  
-  For i = 0 To (Buffer.Length-1)
-  	x = Buffer.Length
-	  If Buffer(i) = 0x02 Then	'start bit'
-	  	start = 1
-		Index_New_Data = 0
-		Finish_New_Data = False
-	  Else If Buffer(i) = 0x0A AND start = 1 Then
-	  	start = 0
-		Finish_New_Data = True
-		
-	  End If
-	  
-	  If start = 1 Then
-	  	Temperatura_C(Index_New_Data) = Buffer(i)
-		Index_New_Data = Index_New_Data + 1
-	  End If
-  Next
- Catch
- End Try
- 
- i = 0
- If Finish_New_Data = True Then
- 	Finish_New_Data = False
-	
-	If Temperatura_C(1) = 0x54 Then 'T'
-	
-		text = BytesToString(Temperatura_C, 2,(Temperatura_C.Length-2), "UTF8")  'przekształcenie bajtów na łańcuch znakowy'
- 		Label5.text = "Temp: " & text & " *C"
-	Else If Temperatura_C(1) = 0x41 Then	'A'
-		text = "Sharp PLewy"
-		Label6.text = text
-	Else If Temperatura_C(1) = 0x42 Then	'B'
-		text = "Sharp PSrodek"
-		Label6.text = text
-	Else If Temperatura_C(1) = 0x43 Then	'C'
-		text = "Sharp PPrawy"
-		Label6.text = text
-	Else If Temperatura_C(1) = 0x45 Then	'E'
-		text = "Sharp TSrodek"
-		Label6.text = text
+
+End Sub
+Sub ast_NewText(Text As String)
+
+Dim temp As String
+Dim a As Char
+Dim b As Char
+a = Text.CharAt(0)
+If Text.Length > 1 Then
+	b = Text.CharAt(1)
+End If
+Nadawanie = False
+
+
+	If a = "T" OR b = "T" Then 'T'
+		Label5.text = "Temp: " & Text & " *C"
+	Else If a = "A" OR b = "A" Then	'A'
+		Text = "Sharp PLewy"
+		Label6.text = Text
+	Else If a = "B" OR b = "B" Then	'B'
+		Text = "Sharp PSrodek"
+		Label6.text = Text
+	Else If a = "C" OR b = "C" Then	'C'
+		Text = "Sharp PPrawy"
+		Label6.text = Text
+	Else If a = "E" OR b = "E" Then	'E'
+		Text = "Sharp TSrodek"
+		Label6.text = Text
 	
 	End If
-	
- 'For i = 0 To (Temperatura_C.Length-1)
- '	Temperatura_C(i) = 0
- 'Next
- End If
+
+ 
  Nadawanie = True ' Po zaznaczeniu zezwalamy na nadawanie rozkazów od zmiany button przez ustawienie zmiennej Nadawanie na True. '
+ 
 End Sub
 
+Sub ast_Error
+	ToastMessageShow( "Błąd strumienia: "& LastException.Message, True )
+End Sub
+
+Sub ast_Terminated
+	ToastMessageShow( "Połączenie zerwane!", True )
+End Sub
 Sub MenuInfo_Click	'funkcja obsługi menu, tutaj dodaję tekst który będzie wyświetlany w menu'
 
  Msgbox("Aplikacja do sterowania robotem mobilnym za pomocą Bluetooth", "BlueSter 1.0.0")
@@ -469,7 +453,8 @@ Sub Adapter_Connected (Powodzenie As Boolean)	'funkcja łączenia bluetooth'
  Flaga=Powodzenie
  If Flaga=True Then								
   Strumien.Initialize(Adapter.InputStream,Adapter.OutputStream,"Strumien")	'jeżeli mamy połączenie to inicjalizujemy strumień przesyłania danych'
-  
+      ast.Initialize(Me, "ast",Adapter.InputStream,Adapter.OutputStream) 'initialize AsyncStreamsText with the socket streams.
+
   'komenda "22" - stop'
 	   Rozkaz(0 + 2) 'bit startu
 	   Rozkaz(48 + 2)

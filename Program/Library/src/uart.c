@@ -271,7 +271,7 @@ void UART__Poll(void)
       uart__status_u.sendSharp1 = 0;
 
       sprintf(data, "%d", (int)ADC__GetSharp1MvValue());
-      UART__StartDmaTransmision(data," Sharp1_mV", 11,"B");
+      UART__StartDmaTransmision(data,"", 0,"B");
 
     }
     else if(uart__status_u.sendSharpPrzodLewy)
@@ -280,7 +280,7 @@ void UART__Poll(void)
       uart__status_u.sendSharpPrzodLewy = 0;
 
       sprintf(data, "%d", (int)ADC__GetSharpPrzodLewyMvValue());
-      UART__StartDmaTransmision(data," Sharp L Przod", 18,"A");
+      UART__StartDmaTransmision(data,"", 0,"A");
 
     }
     else if(uart__status_u.sendSharpPrzodPrawy)
@@ -289,7 +289,7 @@ void UART__Poll(void)
       uart__status_u.sendSharpPrzodPrawy = 0;
 
       sprintf(data, "%d", (int)ADC__GetSharpPrzodPrawyMvValue());
-      UART__StartDmaTransmision(data," Sharp P Przod", 18,"C");
+      UART__StartDmaTransmision(data,"", 0,"C");
 
     }
     else if(uart__status_u.sendSharpTylSrodek)
@@ -298,7 +298,7 @@ void UART__Poll(void)
       uart__status_u.sendSharpTylSrodek = 0;
 
       sprintf(data, "%d", (int)ADC__GetSharpTylSrodekMvValue());
-      UART__StartDmaTransmision(data," Sharp S Tyl", 18,"E");
+      UART__StartDmaTransmision(data,"", 0,"E");
 
     }
     else if(uart__status_u.sendVrefValue)
