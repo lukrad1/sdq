@@ -74,11 +74,14 @@ int main(void)
   UART__DMAConfig();
   UART__Init(UART__BAUDRATE_19200);
   GPIO__ConfigButton(1);
+  GPIO__ConfigEnkoders(1);
   ADC__ResetIsObstacleFlag();
   MOTORS__jazda_zatrzymana();
   //Zezwolenie na przerwanie globalne
   //  __enable_irq(); // po resecie przerwania sa zalaczone z automatu
   /* Infinite loop */
+
+  GPIOC->BSRR = (1<<11);
   while(1)
   {
 
@@ -162,6 +165,7 @@ void SysTick_Handler(void)
   static uint8_t count_timer = 0;
   timer__data_u.time_1ms_flag = 1;
 
+  //GPIOC->ODR ^= (1 << 11);//toggle enkoders pin on PC11
   count_timer++;
   if(count_timer >= 2)
   {
@@ -185,6 +189,26 @@ void SysTick_Handler(void)
 void EXTI4_15_IRQHandler(void)
 {
   static uint8_t data[] = "DMA";
+  static uint32_t counter = 0;
+  if((EXTI->PR & EXTI_PR_PR10) == EXTI_PR_PR10)
+  {
+    /* Clear EXTI 0 flag */
+    // zerujemy flage przerwania ale UWAGA!!! Tutaj zerujemy ja JEDYNKA, a nie zerem !!!!
+    EXTI->PR |= EXTI_PR_PR10;
+
+    counter++;
+
+    GPIOA->ODR ^= (1 << 5);//toggle green led on PA5
+
+    if(counter > 100)
+    {
+
+      MOTORS__jazda_zatrzymana();
+      counter = 0;
+    }
+
+
+  }
 
   if((EXTI->PR & EXTI_PR_PR13) == EXTI_PR_PR13)
   {

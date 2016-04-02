@@ -154,6 +154,41 @@ void GPIO__ConfigButton(uint8_t state)
       NVIC_SetPriority(EXTI4_15_IRQn, 0); /* (4) */
       NVIC_EnableIRQ(EXTI4_15_IRQn); /* (5) */
 }
+
+void GPIO__ConfigEnkoders(uint8_t state)
+{
+  /* Enable the peripheral clock of GPIOC */
+
+     RCC->IOPENR |= (RCC_IOPENR_GPIOCEN);
+
+     /** @brief  Enable or disable the High Speed APB (APB2) peripheral clock.
+       * @note   After reset, the peripheral clock (used for registers read/write access)
+       *         is disabled and the application software has to enable this clock before
+       *         using it.
+       */
+
+
+       /* (2) Select output mode (01) on GPIOC pin 11 */
+       GPIOC->MODER = (GPIOC->MODER & ~(GPIO_MODER_MODE11))
+              | (GPIO_MODER_MODE11_0); /* (2) */
+
+      /* Select mode */
+      /* Select input mode (00) on PC10 */
+      GPIOC->MODER = (GPIOC->MODER & ~(GPIO_MODER_MODE10));
+
+      /* Configure Syscfg, exti and nvic for pushbutton PA0 */
+      /* (1) PC as source input */
+      /* (2) Unmask pin 13 */
+      /* (3) Rising edge */
+      /* (4) Set priority */
+      /* (5) Enable EXTI0_1_IRQn */
+      SYSCFG->EXTICR[2] = (SYSCFG->EXTICR[2] & ~SYSCFG_EXTICR3_EXTI10) | SYSCFG_EXTICR3_EXTI10_PC; /* (1) */
+      EXTI->IMR |= EXTI_IMR_IM10; /* (2) */
+      EXTI->RTSR |= EXTI_RTSR_TR10; /* (3) */
+      //EXTI->FTSR |= EXTI_RTSR_TR10;
+      NVIC_SetPriority(EXTI4_15_IRQn, 0); /* (4) */
+      NVIC_EnableIRQ(EXTI4_15_IRQn); /* (5) */
+}
 #ifdef __cplusplus
   }
 #endif

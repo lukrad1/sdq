@@ -397,40 +397,47 @@ void ADC__Poll(void)
       // vref oraz temp zawsze musza byc na koncu, by ponizsze dzialalo
       for(i = 0; i < NUMBER_OF_SHARP; i++)
       {
-        if(ADC_array[i] > 2500 && timer__data_u.time_pwm_is_on)
-        {
-          MOTORS__jazda_zatrzymana();
-          switch(i)
-          {
-            case SHARP_PRZOD_SRODEK:
-            {
-              TIMER__PWM_DC1_2_Change_Duty(40);
-              MOTORS__jazda_do_tylu();
-              UART__SetSharp1ToSend();
-              //tutaj beda tylko flagi ustawiane i w innym pollingu bedzie wykonywane cofanie, omijanie
-              break;
-            }
-            case SHARP_PRZOD_LEWY:
-            {
-              TIMER__PWM_DC1_2_Change_Duty(40);
-              MOTORS__jazda_do_tylu();
-              UART__SetSharpLewyPrzodToSend();
-              break;
-            }
-            case SHARP_PRZOD_PRAWY:
-            {
-              TIMER__PWM_DC1_2_Change_Duty(40);
-              MOTORS__jazda_do_tylu();
-              UART__SetSharpPrawyPrzodToSend();
 
-              break;
-            }
-            case SHARP_TYL_SRODEK:
+        OBSTACLE__StartIdentificationTimer();
+        if(ADC_array[i] > 2500)
+        {
+          if(timer__data_u.time_pwm_is_on)
+          {
+            MOTORS__jazda_zatrzymana();
+            switch(i)
             {
-              TIMER__PWM_DC1_2_Change_Duty(40);
-              MOTORS__jazda_do_przodu();
-              UART__SetSharpSrodekTylToSend();
-              break;
+              OBSTACLE__SetSharpId(i);
+
+              case SHARP_PRZOD_SRODEK:
+              {
+                //TIMER__PWM_DC1_2_Change_Duty(40);
+                //MOTORS__jazda_do_tylu();
+                UART__SetSharp1ToSend();
+                //tutaj beda tylko flagi ustawiane i w innym pollingu bedzie wykonywane cofanie, omijanie
+                break;
+              }
+              case SHARP_PRZOD_LEWY:
+              {
+               // TIMER__PWM_DC1_2_Change_Duty(40);
+               //MOTORS__jazda_do_tylu();
+                UART__SetSharpLewyPrzodToSend();
+                break;
+              }
+              case SHARP_PRZOD_PRAWY:
+              {
+                //TIMER__PWM_DC1_2_Change_Duty(40);
+                //MOTORS__jazda_do_tylu();
+                UART__SetSharpPrawyPrzodToSend();
+
+                break;
+              }
+              case SHARP_TYL_SRODEK:
+              {
+                //TIMER__PWM_DC1_2_Change_Duty(40);
+               // MOTORS__jazda_do_przodu();
+                UART__SetSharpSrodekTylToSend();
+                break;
+              }
             }
           }
         }
