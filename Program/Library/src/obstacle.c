@@ -19,7 +19,9 @@
 
 #include "stm32l0xx.h"
 #include "obstacle.h"
-
+#include "motors.h"
+#include "adc.h"
+#include "timer.h"
 /****************************************************************************/
 /*                      DECLARATION AND DEFINITIONS                         */
 /****************************************************************************/
@@ -49,9 +51,11 @@
   static volatile struct
   {
     uint8_t isInitiated : 1;    /*!< Did ADC initialization make? */
-    uint8_t start_identification : 1;    /*jezeli jest przeszkoda to ta zmienna blokuje ustawianie pwm z tabletu*/
+    uint8_t start_identification;    /*jezeli jest przeszkoda to ta zmienna blokuje ustawianie pwm z tabletu*/
     uint8_t sharp_id;
-
+    uint8_t obstacle_timeout :1;
+    uint8_t avoid_obstacle_isr_steps : 1;
+    uint8_t avoid_obstacle_isr_counter;
   } obstacle__data_s = {0};
 
 /* Local exported functions */
@@ -62,27 +66,81 @@
   void OBSTACLE__EnkoderInterrupt(void)
   {
 
+    if(obstacle__data_s.avoid_obstacle_isr_steps)
+    {
+      obstacle__data_s.avoid_obstacle_isr_counter++;
+      GPIOA->ODR ^= (1 << 5);//toggle green led on PA5
 
+      if(obstacle__data_s.avoid_obstacle_isr_counter > 50)
+      {
+        MOTORS__jazda_zatrzymana();
+        obstacle__data_s.avoid_obstacle_isr_steps = 0;
+        obstacle__data_s.avoid_obstacle_isr_counter = 0;
+      }
+    }
+    else
+    {
+      obstacle__data_s.avoid_obstacle_isr_counter = 0;
+    }
   }
 
   void OBSTACLE__StartIdentificationTimer(void)
   {
-    obstacle__data_s.start_identification = 1;
+    if(obstacle__data_s.start_identification != 2)
+    {
+      obstacle__data_s.start_identification = 2;
+    }
+  }
 
+  void OBSTACLE__WaitIdentificationTimer(void)
+  {
+    if(obstacle__data_s.start_identification != 1)
+    {
+      obstacle__data_s.start_identification = 1;
+    }
+  }
+
+  uint8_t OBSTACLE__GetIdentificationTimer(void)
+  {
+
+     return obstacle__data_s.start_identification;
+  }
+
+  uint8_t OBSTACLE__GetAvoidObstacleIsrFlag(void)
+  {
+
+     return obstacle__data_s.avoid_obstacle_isr_steps;
+  }
+
+  uint8_t OBSTACLE__GetSharpId(void)
+  {
+     return obstacle__data_s.sharp_id;
+  }
+
+  void OBSTACLE__ClearAvoidObstacleIsrFlag(void)
+  {
+
+    obstacle__data_s.avoid_obstacle_isr_steps = 0;
+    obstacle__data_s.avoid_obstacle_isr_counter = 0;
   }
 
   void OBSTACLE__StopIdentificationTimer(void)
   {
-    obstacle__data_s.start_identification = 0;
-
+    if(obstacle__data_s.start_identification != 0)
+    {
+      MOTORS__GoInLastDirection();
+      obstacle__data_s.start_identification = 0;
+    }
   }
 
   void OBSTACLE__1msPoll(void)
   {
     static int32_t counter = 500;
-    static local_state = 10;
+    static uint8_t local_state = 10;
 
-    if(obstacle__data_s.start_identification)
+    // only if is set start value
+    if(obstacle__data_s.start_identification == 2 &&
+       !obstacle__data_s.avoid_obstacle_isr_steps)
     {
       if(counter > 0)
       {
@@ -96,14 +154,14 @@
           {
             //again check obstacle in adc, so clear start identification
             // no clear counter, becouse
-            obstacle__data_s.start_identification = 0;
+            OBSTACLE__WaitIdentificationTimer();
             local_state++;
             break;
           }
           case 11:
           {
             local_state = obstacle__data_s.sharp_id;
-            // no break
+            break;
           }
           case SHARP_PRZOD_SRODEK: // tu musi byc sharp
           case SHARP_PRZOD_LEWY:
@@ -111,33 +169,31 @@
           {
             TIMER__PWM_DC1_2_Change_Duty(40);
             MOTORS__jazda_do_tylu();
-            counter = 4000; // local timeout if enkoder will work bad
-            local_state = 20;
+            obstacle__data_s.avoid_obstacle_isr_steps = 1;
+            obstacle__data_s.start_identification = 0;
+            counter = 500;
+            local_state = 10;
             break;
           }
           case SHARP_TYL_SRODEK:
           {
             TIMER__PWM_DC1_2_Change_Duty(40);
             MOTORS__jazda_do_przodu();
-            counter = 4000; // local timeout if enkoder will work bad
-            local_state = 20;
-            break;
-          }
-
-          case 20:
-          {
-            //finish obstacle function
-            MOTORS__jazda_zatrzymana();
+            obstacle__data_s.avoid_obstacle_isr_steps = 1;
+            obstacle__data_s.start_identification = 0;
             counter = 500;
             local_state = 10;
-          }
+            break;
           }
         }
       }
-    else if(!obstacle__data_s.start_identification && counter != 0)
+    }
+    else if(!obstacle__data_s.start_identification && counter != 0 && counter != 500)
     {
+      //continue drive or stop
       counter = 500;
       local_state = 10;
+      //MOTORS__GoInLastDirection();
     }
   }
 

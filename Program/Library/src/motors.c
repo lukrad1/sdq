@@ -42,6 +42,13 @@
 /****************************************************************************/
 /* Static function declaration */
 /* ... */
+
+  static volatile struct
+  {
+    uint8_t last_direction;    /*!< Did ADC initialization make? */
+    uint8_t current_direction;
+  } motors_data_s = {0};
+
 /* Functions definitions (1. Static functions 2. Local exported functions */
 /* 3. Interface (exported) functions) */
 /* ... */
@@ -308,6 +315,7 @@ void MOTORS__skret_w_lewo(void)
   kolo_przod_prawe_do_przodu();
   kolo_tyl_prawe_do_przodu();
   TIMER__PWM_DC1_2_ON();
+  motors_data_s.current_direction = JAZDA_W_LEWO;
 }
 
 void MOTORS__skret_w_prawo(void)
@@ -317,6 +325,7 @@ void MOTORS__skret_w_prawo(void)
   kolo_przod_lewe_do_przodu();
   kolo_tyl_lewe_do_przodu();
   TIMER__PWM_DC1_2_ON();
+  motors_data_s.current_direction = JAZDA_W_PRAWO;
 }
 
 void MOTORS__jazda_do_tylu(void)
@@ -326,6 +335,7 @@ void MOTORS__jazda_do_tylu(void)
    kolo_tyl_lewe_do_przodu();
    kolo_tyl_prawe_do_przodu();
    TIMER__PWM_DC1_2_ON();
+   motors_data_s.current_direction = JAZDA_DO_TYLU;
 
 }
 
@@ -336,6 +346,7 @@ void MOTORS__jazda_do_przodu(void)
    kolo_tyl_lewe_do_tylu();
    kolo_tyl_prawe_do_tylu();
    TIMER__PWM_DC1_2_ON();
+   motors_data_s.current_direction = JAZDA_DO_PRZODU;
 }
 
 void MOTORS__jazda_zatrzymana(void)
@@ -345,9 +356,51 @@ void MOTORS__jazda_zatrzymana(void)
   kolo_tyl_lewe_stop();
   kolo_tyl_prawe_stop();
   TIMER__PWM_DC1_2_OFF();
+  motors_data_s.current_direction = JAZDA_ZATRZYMANA;
 }
 
+void MOTORS__SetLastDirection(uint8_t direction)
+{
+  motors_data_s.last_direction = direction;
+}
 
+uint8_t  MOTORS__GetCurrentDirection(void)
+{
+  return motors_data_s.current_direction;
+}
+
+void MOTORS__GoInLastDirection(void)
+{
+
+  switch(motors_data_s.last_direction)
+  {
+    case JAZDA_DO_PRZODU:
+    {
+      MOTORS__jazda_do_przodu();
+      break;
+    }
+    case JAZDA_DO_TYLU:
+    {
+      MOTORS__jazda_do_tylu();
+      break;
+    }
+    case JAZDA_W_LEWO:
+    {
+      MOTORS__skret_w_lewo();
+      break;
+    }
+    case JAZDA_W_PRAWO:
+    {
+      MOTORS__skret_w_prawo();
+      break;
+    }
+    case JAZDA_ZATRZYMANA:
+    {
+      MOTORS__jazda_zatrzymana();
+      break;
+    }
+  }
+}
 #ifdef __cplusplus
   }
 #endif

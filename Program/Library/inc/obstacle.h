@@ -61,6 +61,10 @@
   void OBSTACLE__EnkoderInterrupt(void);
   void OBSTACLE__SetSharpId(uint8_t type_of_sharp);
   void OBSTACLE__1msPoll(void);
+  uint8_t OBSTACLE__GetIdentificationTimer(void);
+  uint8_t OBSTACLE__GetAvoidObstacleIsrFlag(void);
+  void OBSTACLE__ClearAvoidObstacleIsrFlag(void);
+  uint8_t OBSTACLE__GetSharpId(void);
 
 #ifdef __cplusplus
   }

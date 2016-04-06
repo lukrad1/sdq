@@ -22,6 +22,7 @@
 #include "uart.h"
 #include "timer.h"
 #include "motors.h"
+#include "obstacle.h"
 /****************************************************************************/
 /*                      DECLARATION AND DEFINITIONS                         */
 /****************************************************************************/
@@ -398,15 +399,17 @@ void ADC__Poll(void)
       for(i = 0; i < NUMBER_OF_SHARP; i++)
       {
 
-        OBSTACLE__StartIdentificationTimer();
-        if(ADC_array[i] > 2500)
+        if(ADC_array[i] > 2300)
         {
-          if(timer__data_u.time_pwm_is_on)
+          if((timer__data_u.time_pwm_is_on || OBSTACLE__GetIdentificationTimer() == 1) &&
+              !OBSTACLE__GetAvoidObstacleIsrFlag())
           {
             MOTORS__jazda_zatrzymana();
+            OBSTACLE__StartIdentificationTimer();
+            OBSTACLE__SetSharpId(i);
+
             switch(i)
             {
-              OBSTACLE__SetSharpId(i);
 
               case SHARP_PRZOD_SRODEK:
               {
@@ -440,9 +443,41 @@ void ADC__Poll(void)
               }
             }
           }
+          else if(OBSTACLE__GetAvoidObstacleIsrFlag())
+          {
+            switch(i)
+            {
+              case SHARP_PRZOD_SRODEK:
+              case SHARP_PRZOD_LEWY:
+              case SHARP_PRZOD_PRAWY:
+              {
+                if(MOTORS__GetCurrentDirection() == JAZDA_DO_PRZODU)
+                {
+                  MOTORS__jazda_zatrzymana();
+                  OBSTACLE__ClearAvoidObstacleIsrFlag();
+                  OBSTACLE__StartIdentificationTimer();
+                  OBSTACLE__SetSharpId(i);
+                }
+
+                break;
+              }
+              case SHARP_TYL_SRODEK:
+              {
+                if(MOTORS__GetCurrentDirection() == JAZDA_DO_TYLU)
+                {
+                  MOTORS__jazda_zatrzymana();
+                  OBSTACLE__ClearAvoidObstacleIsrFlag();
+                  OBSTACLE__StartIdentificationTimer();
+                  OBSTACLE__SetSharpId(i);
+                }
+                break;
+              }
+            }
+          }
         }
-        else if(ADC_array[i] > 2400)
+        else if(ADC_array[i] > 2000)
         {
+          //OBSTACLE__StopIdentificationTimer();
           if(timer__data_u.time_pwm_last_value > 40)
           {
             TIMER__PWM_DC1_2_Change_Duty(40);
@@ -450,8 +485,9 @@ void ADC__Poll(void)
 
           adc__data_s.is_Obstacle = 1;
         }
-        else if(ADC_array[i] > 2100)
+        else if(ADC_array[i] > 1800)
         {
+          //OBSTACLE__StopIdentificationTimer();
           if(timer__data_u.time_pwm_last_value > 50)
           {
             TIMER__PWM_DC1_2_Change_Duty(50);
@@ -460,22 +496,25 @@ void ADC__Poll(void)
           adc__data_s.is_Obstacle = 1;
         }
 
-        else if(ADC_array[i] > 1800)
+        else if(ADC_array[i] > 1600)
         {
+          //OBSTACLE__StopIdentificationTimer();
           if(timer__data_u.time_pwm_last_value > 80)
           {
-            TIMER__PWM_DC1_2_Change_Duty(80);
+            TIMER__PWM_DC1_2_Change_Duty(70);
           }
           adc__data_s.is_Obstacle = 1;
         }
         else
         {
+          //OBSTACLE__StopIdentificationTimer();
           counter++;
         }
       }
 
       if(counter >= NUMBER_OF_SHARP)
       {
+        OBSTACLE__StopIdentificationTimer();
         adc__data_s.is_Obstacle = 0;
       }
       //counter kasowany automatyczznie bo zmienna lokalna

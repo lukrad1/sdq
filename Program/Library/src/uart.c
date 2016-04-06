@@ -222,23 +222,32 @@ void UART__Poll(void)
     if(RxBuffer[0] == 49 && RxBuffer[1] == 49)
     {
       MOTORS__jazda_do_tylu();
-      GPIOA->ODR ^= (1 << 5);//toggle green led on PA5
+      MOTORS__SetLastDirection(JAZDA_DO_TYLU);
+      OBSTACLE__ClearAvoidObstacleIsrFlag();
     }
     else if(RxBuffer[0] == 49 && RxBuffer[1] == 48)
     {
       MOTORS__skret_w_lewo();
+      MOTORS__SetLastDirection(JAZDA_W_LEWO);
+      OBSTACLE__ClearAvoidObstacleIsrFlag();
     }
     else if(RxBuffer[0] == 50 && RxBuffer[1] == 50)
     {
       MOTORS__jazda_zatrzymana();
+      MOTORS__SetLastDirection(JAZDA_ZATRZYMANA);
+      OBSTACLE__ClearAvoidObstacleIsrFlag();
     }
     else if(RxBuffer[0] == 50 && RxBuffer[1] == 48)
     {
       MOTORS__skret_w_prawo();
+      MOTORS__SetLastDirection(JAZDA_W_PRAWO);
+      OBSTACLE__ClearAvoidObstacleIsrFlag();
     }
     else if(RxBuffer[0] == 50 && RxBuffer[1] == 53)
     {
       MOTORS__jazda_do_przodu();
+      MOTORS__SetLastDirection(JAZDA_DO_PRZODU);
+      OBSTACLE__ClearAvoidObstacleIsrFlag();
     }
     else if(RxBuffer[0] == 37)
     {

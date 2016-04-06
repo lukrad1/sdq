@@ -27,7 +27,7 @@ extern "C"
 #include "adc.h"
 #include "uart.h"
 #include "motors.h"
-
+#include "obstacle.h"
 /****************************************************************************/
 /*                      DECLARATION AND DEFINITIONS                         */
 /****************************************************************************/
@@ -88,6 +88,8 @@ int main(void)
     if(timer__data_u.time_1ms_flag)
     {
       timer__data_u.time_1ms_flag = 0;
+
+      OBSTACLE__1msPoll();
       counter++;
     }
 
@@ -189,23 +191,13 @@ void SysTick_Handler(void)
 void EXTI4_15_IRQHandler(void)
 {
   static uint8_t data[] = "DMA";
-  static uint32_t counter = 0;
   if((EXTI->PR & EXTI_PR_PR10) == EXTI_PR_PR10)
   {
     /* Clear EXTI 0 flag */
     // zerujemy flage przerwania ale UWAGA!!! Tutaj zerujemy ja JEDYNKA, a nie zerem !!!!
     EXTI->PR |= EXTI_PR_PR10;
 
-    counter++;
-
-    GPIOA->ODR ^= (1 << 5);//toggle green led on PA5
-
-    if(counter > 100)
-    {
-
-      MOTORS__jazda_zatrzymana();
-      counter = 0;
-    }
+    OBSTACLE__EnkoderInterrupt();
 
 
   }
