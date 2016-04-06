@@ -47,6 +47,11 @@ uint8_t TIMER__GetStatus(void);
 #define TIMER__4MHZ_CLK 4000000
 #define TIMER__1MHZ_CLK 1000000
 
+
+/* Define the Timer to be configured */
+#define TIMx_BASE       TIM2_BASE
+#define TIMx            ((TIM_TypeDef *) TIMx_BASE)
+
 /* Typedef definition */
 
 typedef union
@@ -56,8 +61,13 @@ typedef union
   struct
   {
     uint8_t time_1ms_flag : 1;
+    uint8_t time_adc_2ms_flag : 1;
+    uint8_t time_adc_5ms_flag : 1;
     uint8_t time_10ms_flag : 1;
     uint8_t time_example : 1;
+    uint8_t time_pwm_is_on : 1;
+    uint8_t time_pwm_last_value;
+
   };
   
 } timer__union_u_t;
@@ -67,7 +77,7 @@ typedef union
 /****************************************************************************/
 
 /* Global variable declaration */
-
+extern volatile timer__union_u_t timer__data_u;
 /****************************************************************************/
 /*                  FUNCTIONS DECLARATIONS AND DEFINITIONS                  */
 /****************************************************************************/
@@ -136,6 +146,10 @@ void TIMER__SetFlag(timer__union_u_t* union_address, uint8_t set_reset_status);
 *
 */
 uint8_t TIMER__GetStatus(void);
+
+void TIMER__PWM_DC1_2_ON(void);
+void TIMER__PWM_DC1_2_OFF(void);
+void TIMER__PWM_DC1_2_Change_Duty(uint8_t duty_in_percent);
 
 #ifdef __cplusplus
   }

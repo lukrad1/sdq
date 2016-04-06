@@ -19,7 +19,10 @@
 #include "stm32l0xx.h"
 #include "gpio.h"
 #include "adc.h"
-
+#include "uart.h"
+#include "timer.h"
+#include "motors.h"
+#include "obstacle.h"
 /****************************************************************************/
 /*                      DECLARATION AND DEFINITIONS                         */
 /****************************************************************************/
@@ -32,13 +35,18 @@
 static volatile struct
 {
 	uint8_t isInitiated : 1;    /*!< Did ADC initialization make? */
-	uint8_t vrefInitiated : 1;  /*!< Did Vref initialization make?*/
-  uint8_t measure_flag : 1;
-  
-	uint16_t vref_adc;    /*!< Vref value in ADC */
-	uint16_t vref_mv;     /*!< Vref value in [mV] */
-	uint16_t temp_adc;    /*!< Temperature value in ADC */
-	int16_t temp_degree;  /*!< Temperature value in [mV] */
+	uint8_t is_Obstacle : 1;    /*jezeli jest przeszkoda to ta zmienna blokuje ustawianie pwm z tabletu*/
+	uint8_t end_adc_measure : 1;
+	uint16_t vrefcalib_value;  /*!< calib adc vref value*/
+	uint16_t vdda_value;    /*!< stm power voltage value in mv */
+	uint32_t vref_adc;    /*!< Vref value in ADC */
+	uint32_t vref_mv;     /*!< Vref value in [mV] */
+	int32_t temp_adc;    /*!< Temperature value in ADC */
+	int32_t temp_degree;  /*!< Temperature value in [mV] */
+	uint32_t sharp_przod_srodek_mv;
+	uint32_t sharp_przod_lewy_mv;
+	uint32_t sharp_przod_prawy_mv;
+	uint32_t sharp_tyl_srodek_mv;
 	uint16_t batt_mv;     /*!< Battery value in [mV] */
   
   uint32_t EE_Vref;
@@ -50,9 +58,8 @@ static volatile struct
 /****************************************************************************/
 
 /* Global variable declaration */
-int32_t temperature_C; //contains the computed temperature
 
-uint16_t ADC_array[NUMBER_OF_ADC_CHANNEL]; //Array to store the values coming from the ADC and copied by DMA
+int32_t ADC_array[NUMBER_OF_ADC_CHANNEL]; //Array to store the values coming from the ADC and copied by DMA
 uint32_t CurrentChannel; //index on the ADC_array
 /****************************************************************************/
 /*                  FUNCTIONS DECLARATIONS AND DEFINITIONS                  */
@@ -84,6 +91,7 @@ static void adc__Init(void)
        /* (1) Select HSI16 by writing 00 in CKMODE (reset value) */
          /* (2) Select the continuous mode and scanning direction */
          /* (3) Select CHSEL10, CHSEL17 and CHSEL18, Select CHSEL18 for temperature sensor  */
+    // resolution by default is 12-bit.
          /* (4) Select a sampling mode of 111 i.e. 239.5 ADC clk to be greater than 5 us */
          /* (5) Enable interrupts on EOC, EOSEQ and overrrun */
          /* (6) Wake-up the VREFINT (only for VLCD, Temp sensor and VRefInt) */
@@ -93,16 +101,17 @@ static void adc__Init(void)
          /* (8) Wait for VREFINT ADC buffer ready */
          //ADC1->CFGR2 &= ~ADC_CFGR2_CKMODE; /* (1) */
          ADC1->CFGR1 |= ADC_CFGR1_WAIT |ADC_CFGR1_CONT | ADC_CFGR1_SCANDIR; /* (2) */
-         ADC1->CHSELR = ADC_CHSELR_CHSEL10 \
-                      | ADC_CHSELR_CHSEL17 | ADC_CHSELR_CHSEL18; /* (3) */
-         ADC1->SMPR |= ADC_SMPR_SMP_0 | ADC_SMPR_SMP_1 | ADC_SMPR_SMP_2; /* (4) */
+         ADC1->CHSELR = ADC_CHSELR_CHSEL10 | ADC_CHSELR_CHSEL11 | ADC_CHSELR_CHSEL12 \
+                      | ADC_CHSELR_CHSEL13 | ADC_CHSELR_CHSEL17 | ADC_CHSELR_CHSEL18; /* (3) */
+         ADC1->SMPR |= ADC_SMPR_SMPR_0 | ADC_SMPR_SMPR_1 | ADC_SMPR_SMPR_2; /* (4) */
          ADC1->IER = ADC_IER_EOCIE | ADC_IER_EOSEQIE | ADC_IER_OVRIE; /* (5) */
          ADC->CCR |= ADC_CCR_VREFEN | ADC_CCR_TSEN;  /* (6) */
          SYSCFG->CFGR3 |= SYSCFG_CFGR3_EN_VREFINT
                         | SYSCFG_CFGR3_ENBUF_VREFINT_ADC
                         | SYSCFG_CFGR3_ENBUF_SENSOR_ADC;/* (7) */
-         while ((SYSCFG->CFGR3 & SYSCFG_CFGR3_VREFINT_ADC_RDYF
-                               | SYSCFG_CFGR3_SENSOR_ADC_RDYF) == 0) /* (8) */
+         while ((SYSCFG->CFGR3 & SYSCFG_VREFINT_ADC_RDYF &&
+                 SYSCFG->CFGR3 & SYSCFG_CFGR3_SENSOR_ADC_RDYF) == 0) /* (8) */
+
          {
            /* For robust implementation, add here time-out management */
          }
@@ -142,24 +151,11 @@ static void adc__Init(void)
         }
        }
 
+       adc__data_s.vrefcalib_value = *VREFINT_CAL_ADDR;
        adc__data_s.isInitiated = 1;
 
-
 }
 
-/******************************* END FUNCTION *********************************/
-
-/**
-* \brief ADC temperature measured function.
-*
-* This function measures temperature value in ADC. Other function converts adc 
-* value into Celsius degree. All results are saving into adc_data_s.
-*/
-static void adc__MeasureTemp(void)
-{
-    ADC1->CR |= ADC_CR_ADSTART; /* start the ADC conversion */
-    while ((ADC1->ISR & ADC_ISR_EOC) == 0); /* Wait end of conversion */
-}
 
 /******************************* END FUNCTION *********************************/
 
@@ -195,18 +191,6 @@ static int32_t adc__ConvertTemperature(int32_t measure)
   return(temperature);
 }
 
-/******************************* END FUNCTION *********************************/
-
-/**
-* \brief ADC Reference Voltage measured function.
-*
-* This function measures Reference Voltage and converts it to mV. All results are
-* saved into adc_data_s.
-*/
-static void adc__MeasureVref(void)
-{
-  
-}
 
 /******************************* END FUNCTION *********************************/
 
@@ -234,75 +218,309 @@ void ADC__DeInit(void)
   adc__data_s.isInitiated = 0;
 }
 
-/******************************* END FUNCTION *********************************/
-
-uint16_t ADC__CalcBattery(void)
-{
-
-}
-
-/******************************* END FUNCTION *********************************/
-
-int32_t ADC__CalcTemperature(void)
-{
-  adc__Init();
-  adc__MeasureTemp();
-  temperature_C = adc__ConvertTemperature((int32_t) ADC1->DR);
-  ADC__DeInit();
-  return temperature_C;
-}
 
 /******************************* END FUNCTION *********************************/
 
 void ADC__MeasureAllAdc(void)
 {
-  adc__Init();
-  if ((ADC1->CR & ADC_CR_ADSTART) != 0) /* Check if conversion on going */
-  {
-    ADC1->CR |= ADC_CR_ADSTP; /* Stop the sequence conversion */
-  }
-  else
-  {
-    ADC1->CFGR1 ^= ADC_CFGR1_SCANDIR;  /* Toggle SCANDIR */
-    CurrentChannel = 0;
-    ADC1->CR |= ADC_CR_ADSTART; /* Restart the sequence conversion */
-  }
+    adc__Init();
+
+    if ((ADC1->CR & ADC_CR_ADSTART) != 0) /* Check if conversion on going */
+    {
+      ADC1->CR |= ADC_CR_ADSTP; /* Stop the sequence conversion */
+    }
+    else
+    {
+      ADC1->CFGR1 ^= ADC_CFGR1_SCANDIR;  /* Toggle SCANDIR */
+      CurrentChannel = 0;
+      ADC1->CR |= ADC_CR_ADSTART; /* Restart the sequence conversion */
+    }
+
+
 
 }
 
-/*
- void ADC__Measure(ADC__conversionType_e_t conversionType)
+/******************************* END FUNCTION *********************************/
+
+void ADC__UpdateAdcStruct(int32_t* data)
+{
+    static uint8_t vdd_vref_measure = 0;
+
+    static uint8_t number_of_sample = 0;
+    static uint32_t sharp_przod_srodek_temp = 0;
+    static uint32_t sharp_przod_lewy_temp = 0;
+    static uint32_t sharp_przod_prawy_temp = 0;
+    static uint32_t sharp_tyl_srodek_temp = 0;
+
+
+    number_of_sample++;
+    if(!vdd_vref_measure)
+    {
+      vdd_vref_measure = 1; // tylko raz podczas dzialania programu bedzie dokonany pomiar vref
+      adc__data_s.vdda_value = (3*1000*adc__data_s.vrefcalib_value/data[VREF]);
+
+      adc__data_s.vref_adc = data[VREF];
+      adc__data_s.vref_mv = ((adc__data_s.vdda_value * adc__data_s.vref_adc)/4095);
+    }
+
+    adc__data_s.temp_adc = data[TEMPERATURA];
+    adc__data_s.temp_degree = adc__ConvertTemperature(adc__data_s.temp_adc);
+
+    sharp_przod_srodek_temp += data[SHARP_PRZOD_SRODEK];
+    sharp_przod_lewy_temp += data[SHARP_PRZOD_LEWY];
+    sharp_przod_prawy_temp += data[SHARP_PRZOD_PRAWY];
+    sharp_tyl_srodek_temp += data[SHARP_TYL_SRODEK];
+
+
+
+    if(number_of_sample >= 32)
+    {
+      number_of_sample = 0;
+
+      adc__data_s.sharp_przod_srodek_mv = ((adc__data_s.vdda_value *
+                                          (sharp_przod_srodek_temp>>5)) / 4095);
+      adc__data_s.sharp_przod_lewy_mv = ((adc__data_s.vdda_value *
+                                          (sharp_przod_lewy_temp>>5)) / 4095);
+      adc__data_s.sharp_przod_prawy_mv = ((adc__data_s.vdda_value *
+                                          (sharp_przod_prawy_temp>>5)) / 4095);
+      adc__data_s.sharp_tyl_srodek_mv = ((adc__data_s.vdda_value *
+                                          (sharp_tyl_srodek_temp>>5)) / 4095);
+
+      sharp_przod_srodek_temp = 0;
+      sharp_przod_lewy_temp = 0;
+      sharp_przod_prawy_temp = 0;
+      sharp_tyl_srodek_temp = 0;
+
+    }
+
+
+    adc__data_s.end_adc_measure = 1;
+
+}
+
+
+/******************************* END FUNCTION *********************************/
+
+int32_t ADC__GetSharp1MvValue(void)
+{
+
+  return adc__data_s.sharp_przod_srodek_mv;
+}
+/******************************* END FUNCTION *********************************/
+
+int32_t ADC__GetSharpPrzodLewyMvValue(void)
+{
+
+  return adc__data_s.sharp_przod_lewy_mv;
+}
+
+/******************************* END FUNCTION *********************************/
+
+int32_t ADC__GetSharpPrzodPrawyMvValue(void)
+{
+
+  return adc__data_s.sharp_przod_prawy_mv;
+}
+
+/******************************* END FUNCTION *********************************/
+
+int32_t ADC__GetSharpTylSrodekMvValue(void)
+{
+
+  return adc__data_s.sharp_tyl_srodek_mv;
+}
+/******************************* END FUNCTION *********************************/
+
+int32_t ADC__GetVrefAdcValue(void)
+{
+
+  return adc__data_s.vref_adc;
+}
+
+/******************************* END FUNCTION *********************************/
+
+int32_t ADC__GetTempAdcValue(void)
+{
+
+  return adc__data_s.temp_adc;
+}
+
+/******************************* END FUNCTION *********************************/
+
+int32_t ADC__GetTempDegreeValue(void)
+{
+
+  return adc__data_s.temp_degree;
+}
+
+/******************************* END FUNCTION *********************************/
+
+void ADC__SetIsObstacleFlag(void)
+{
+
+  adc__data_s.is_Obstacle = 1;
+}
+
+/******************************* END FUNCTION *********************************/
+
+void ADC__ResetIsObstacleFlag(void)
+{
+
+  adc__data_s.is_Obstacle = 0;
+}
+
+/******************************* END FUNCTION *********************************/
+
+uint8_t ADC__GetIsObstacleFlag(void)
+{
+
+  return adc__data_s.is_Obstacle;
+}
+
+
+void ADC__Poll(void)
+{
+  uint8_t i = 0;
+  uint8_t counter = 0;
+
+  if(timer__data_u.time_adc_2ms_flag)
   {
-    uint32_t buffer = 0;
-    uint8_t i;
+    timer__data_u.time_adc_2ms_flag = 0;
 
-    if(adc__data_s.isInitiated == 0)
+    // deinicjalizacja jest po pomiarach
+    if(!adc__data_s.end_adc_measure && !adc__data_s.isInitiated)
     {
-      ADC__Init();
+      ADC__MeasureAllAdc();
     }
-
-    switch(conversionType)
+    else
     {
-    default:
-      break;
+      adc__data_s.end_adc_measure = 0;
+      // vref oraz temp zawsze musza byc na koncu, by ponizsze dzialalo
+      for(i = 0; i < NUMBER_OF_SHARP; i++)
+      {
 
-    case adc__CONVTYPE_BATTERY:
-      adc__MeasureBatt();
-      break;
+        if(ADC_array[i] > 2300)
+        {
+          if((timer__data_u.time_pwm_is_on || OBSTACLE__GetIdentificationTimer() == 1) &&
+              !OBSTACLE__GetAvoidObstacleIsrFlag())
+          {
+            MOTORS__jazda_zatrzymana();
+            OBSTACLE__StartIdentificationTimer();
+            OBSTACLE__SetSharpId(i);
 
-    case adc__CONVTYPE_CO:
-      adc__MeasureCO();
-      break;
+            switch(i)
+            {
 
-    case adc__CONVTYPE_VOLTREF:
-      adc__MeasureVref();
-      break;
+              case SHARP_PRZOD_SRODEK:
+              {
+                //TIMER__PWM_DC1_2_Change_Duty(40);
+                //MOTORS__jazda_do_tylu();
+                UART__SetSharp1ToSend();
+                //tutaj beda tylko flagi ustawiane i w innym pollingu bedzie wykonywane cofanie, omijanie
+                break;
+              }
+              case SHARP_PRZOD_LEWY:
+              {
+               // TIMER__PWM_DC1_2_Change_Duty(40);
+               //MOTORS__jazda_do_tylu();
+                UART__SetSharpLewyPrzodToSend();
+                break;
+              }
+              case SHARP_PRZOD_PRAWY:
+              {
+                //TIMER__PWM_DC1_2_Change_Duty(40);
+                //MOTORS__jazda_do_tylu();
+                UART__SetSharpPrawyPrzodToSend();
 
-    case adc__CONVTYPE_TEMPERATURE:
-      adc__MeasureTemp();
-      break;
+                break;
+              }
+              case SHARP_TYL_SRODEK:
+              {
+                //TIMER__PWM_DC1_2_Change_Duty(40);
+               // MOTORS__jazda_do_przodu();
+                UART__SetSharpSrodekTylToSend();
+                break;
+              }
+            }
+          }
+          else if(OBSTACLE__GetAvoidObstacleIsrFlag())
+          {
+            switch(i)
+            {
+              case SHARP_PRZOD_SRODEK:
+              case SHARP_PRZOD_LEWY:
+              case SHARP_PRZOD_PRAWY:
+              {
+                if(MOTORS__GetCurrentDirection() == JAZDA_DO_PRZODU)
+                {
+                  MOTORS__jazda_zatrzymana();
+                  OBSTACLE__ClearAvoidObstacleIsrFlag();
+                  OBSTACLE__StartIdentificationTimer();
+                  OBSTACLE__SetSharpId(i);
+                }
+
+                break;
+              }
+              case SHARP_TYL_SRODEK:
+              {
+                if(MOTORS__GetCurrentDirection() == JAZDA_DO_TYLU)
+                {
+                  MOTORS__jazda_zatrzymana();
+                  OBSTACLE__ClearAvoidObstacleIsrFlag();
+                  OBSTACLE__StartIdentificationTimer();
+                  OBSTACLE__SetSharpId(i);
+                }
+                break;
+              }
+            }
+          }
+        }
+        else if(ADC_array[i] > 2000)
+        {
+          //OBSTACLE__StopIdentificationTimer();
+          if(timer__data_u.time_pwm_last_value > 40)
+          {
+            TIMER__PWM_DC1_2_Change_Duty(40);
+          }
+
+          adc__data_s.is_Obstacle = 1;
+        }
+        else if(ADC_array[i] > 1800)
+        {
+          //OBSTACLE__StopIdentificationTimer();
+          if(timer__data_u.time_pwm_last_value > 50)
+          {
+            TIMER__PWM_DC1_2_Change_Duty(50);
+          }
+
+          adc__data_s.is_Obstacle = 1;
+        }
+
+        else if(ADC_array[i] > 1600)
+        {
+          //OBSTACLE__StopIdentificationTimer();
+          if(timer__data_u.time_pwm_last_value > 80)
+          {
+            TIMER__PWM_DC1_2_Change_Duty(70);
+          }
+          adc__data_s.is_Obstacle = 1;
+        }
+        else
+        {
+          //OBSTACLE__StopIdentificationTimer();
+          counter++;
+        }
+      }
+
+      if(counter >= NUMBER_OF_SHARP)
+      {
+        OBSTACLE__StopIdentificationTimer();
+        adc__data_s.is_Obstacle = 0;
+      }
+      //counter kasowany automatyczznie bo zmienna lokalna
     }
-  }*/
+  }
+}
 
 #ifdef __cplusplus
   }

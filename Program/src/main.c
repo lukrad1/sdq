@@ -27,6 +27,7 @@ extern "C"
 #include "adc.h"
 #include "uart.h"
 #include "motors.h"
+#include "obstacle.h"
 /****************************************************************************/
 /*                      DECLARATION AND DEFINITIONS                         */
 /****************************************************************************/
@@ -42,8 +43,8 @@ extern "C"
 /* Global variable declaration */
 /* for example: extern unsigned int module_variable_1; */
 
-volatile uint8_t flag_1ms = 0;
 uint16_t counter = 0;
+volatile uint16_t error = 0;  //initialized at 0 and modified by the functions
 /****************************************************************************/
 /*                  FUNCTIONS DECLARATIONS AND DEFINITIONS                  */
 /****************************************************************************/
@@ -67,34 +68,46 @@ int main(void)
   /* Enable SYSCFG Clock - it's required to adc measure, uart and dma */
   RCC->APB2ENR |= (RCC_APB2ENR_SYSCFGEN);
   GPIO__Init();
+  TIMER__InitClk();
   SysTick_Config(4000); /* 1ms config */
   GPIO__ConfigUART(1);
   UART__DMAConfig();
   UART__Init(UART__BAUDRATE_19200);
   GPIO__ConfigButton(1);
-
+  GPIO__ConfigEnkoders(1);
+  ADC__ResetIsObstacleFlag();
   MOTORS__jazda_zatrzymana();
   //Zezwolenie na przerwanie globalne
   //  __enable_irq(); // po resecie przerwania sa zalaczone z automatu
   /* Infinite loop */
+
+  GPIOC->BSRR = (1<<11);
   while(1)
   {
 
-    if(flag_1ms)
+    if(timer__data_u.time_1ms_flag)
     {
-      flag_1ms = 0;
+      timer__data_u.time_1ms_flag = 0;
+
+      OBSTACLE__1msPoll();
       counter++;
     }
 
-    if(counter >= 5000)
+    if(counter >= 3000)
     {
 
-      ADC__CalcTemperature();
+//      UART__SetSharp1ToSend();
+//      UART__SetVrefToSend();
       UART__SetIntTempToSend();
+//      UART__SetSharpLewyPrzodToSend();
+//      UART__SetSharpPrawyPrzodToSend();
+//      UART__SetSharpSrodekTylToSend();
+
       counter = 0;
     }
 
     UART__Poll();
+    ADC__Poll();
   }
 }
 
@@ -151,7 +164,16 @@ void PendSV_Handler(void)
  */
 void SysTick_Handler(void)
 {
-  flag_1ms = 1;
+  static uint8_t count_timer = 0;
+  timer__data_u.time_1ms_flag = 1;
+
+  //GPIOC->ODR ^= (1 << 11);//toggle enkoders pin on PC11
+  count_timer++;
+  if(count_timer >= 2)
+  {
+    count_timer = 0;
+    timer__data_u.time_adc_2ms_flag = 1;
+  }
 }
 
 /******************************************************************************/
@@ -169,6 +191,16 @@ void SysTick_Handler(void)
 void EXTI4_15_IRQHandler(void)
 {
   static uint8_t data[] = "DMA";
+  if((EXTI->PR & EXTI_PR_PR10) == EXTI_PR_PR10)
+  {
+    /* Clear EXTI 0 flag */
+    // zerujemy flage przerwania ale UWAGA!!! Tutaj zerujemy ja JEDYNKA, a nie zerem !!!!
+    EXTI->PR |= EXTI_PR_PR10;
+
+    OBSTACLE__EnkoderInterrupt();
+
+
+  }
 
   if((EXTI->PR & EXTI_PR_PR13) == EXTI_PR_PR13)
   {
@@ -176,9 +208,9 @@ void EXTI4_15_IRQHandler(void)
     // zerujemy flage przerwania ale UWAGA!!! Tutaj zerujemy ja JEDYNKA, a nie zerem !!!!
     EXTI->PR |= EXTI_PR_PR13;
 
-    ADC__MeasureAllAdc();
+
     GPIOA->ODR ^= (1 << 5);//toggle green led on PA5
-    UART__StartDmaTransmision(data, 3);
+    UART__StartDmaTransmision(data,"", 3,"");
 
   }
 }
@@ -244,9 +276,6 @@ void ADC1_COMP_IRQHandler(void)
       if ((ADC1->ISR & ADC_ISR_EOC) != 0)  /* Check EOC has triggered the IT */
       {
         ADC_array[CurrentChannel] = ADC1->DR; /* Read data and clears EOC flag */
-
-        sprintf(data, "%d", (int)ADC_array[CurrentChannel]);
-        UART__StartDmaTransmision(data, 2);
         CurrentChannel++;  /* Increment the index on ADC_array */
 
       }
@@ -254,8 +283,8 @@ void ADC1_COMP_IRQHandler(void)
       {
         ADC1->ISR |= ADC_ISR_EOSEQ; /* Clear the pending bit */
         CurrentChannel = 0; /* Reinitialize the CurrentChannel */
+        ADC__UpdateAdcStruct(ADC_array);
         ADC__DeInit();
-        GPIOB->ODR ^= (1<<5); /* Toggle green led on PB4 */
       }
     }
   }

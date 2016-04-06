@@ -3,4 +3,4 @@
 *.bak
 Debug/
 Release/
-
+Android/Objects/

@@ -89,7 +89,15 @@
 
 
 /* Typedef definition */
+  typedef enum motors_obstacle_e
+  {
+    JAZDA_ZATRZYMANA = 10,
+    JAZDA_DO_PRZODU,
+    JAZDA_DO_TYLU,
+    JAZDA_W_PRAWO,
+    JAZDA_W_LEWO
 
+  };
 
 /* ... */
 
@@ -100,7 +108,6 @@
 
 /* Global variable declaration */
 /* for example: extern unsigned int module_variable_1; */
-
 
 /****************************************************************************/
 /*                  FUNCTIONS DECLARATIONS AND DEFINITIONS                  */
@@ -114,14 +121,17 @@
 
 /* Exported functions */
 
-  void PWM__DC1_2_ON(void);
-  void PWM__DC1_2_OFF(void);
+
   void MOTORS__skret_w_lewo(void);
   void MOTORS__skret_w_prawo(void);
   void MOTORS__jazda_do_tylu(void);
   void MOTORS__jazda_do_przodu(void);
   void MOTORS__jazda_zatrzymana(void);
 
+  void MOTORS__SetLastDirection(uint8_t direction);
+  void MOTORS__GoInLastDirection(void);
+
+  uint8_t  MOTORS__GetCurrentDirection(void);
 #ifdef __cplusplus
   }
 #endif

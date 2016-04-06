@@ -27,13 +27,15 @@ Allocating common symbols
 Common symbol       size              file
 
 stringtoreceive     0x1               Library\src\uart.o
-temperature_C       0x4               Library\src\adc.o
 errno               0x4               e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/../../../../arm-atollic-eabi/lib/armv6-m\libc_s.a(lib_a-reent.o)
+timer__data_u       0x2               Library\src\timer.o
 LSI_measured_frequency
                     0x2               Library\src\rtc.o
+CurrentChannel      0x4               Library\src\adc.o
 RxBuffer            0xa               Library\src\uart.o
 led__data_s         0x4               Library\src\led.o
 stringtosend        0x14              Library\src\uart.o
+ADC_array           0x18              Library\src\adc.o
 
 Discarded input sections
 
@@ -70,10 +72,6 @@ Discarded input sections
  .text          0x00000000        0x0 Library\src\timer.o
  .data          0x00000000        0x0 Library\src\timer.o
  .bss           0x00000000        0x0 Library\src\timer.o
- .bss.timer__data_u
-                0x00000000        0x4 Library\src\timer.o
- .text.TIMER__InitClk
-                0x00000000        0x8 Library\src\timer.o
  .text.TIMER__DelayMs
                 0x00000000       0x24 Library\src\timer.o
  .text.TIMER__Delay10us
@@ -88,17 +86,6 @@ Discarded input sections
                 0x00000000       0x14 Library\src\timer.o
  .text.TIMER__SetFlag
                 0x00000000       0x4c Library\src\timer.o
- .debug_info    0x00000000      0x1e5 Library\src\timer.o
- .debug_abbrev  0x00000000      0x122 Library\src\timer.o
- .debug_aranges
-                0x00000000       0x58 Library\src\timer.o
- .debug_ranges  0x00000000       0x48 Library\src\timer.o
- .debug_line    0x00000000      0x21a Library\src\timer.o
- .debug_str     0x00000000      0x28d Library\src\timer.o
- .comment       0x00000000       0x83 Library\src\timer.o
- .ARM.attributes
-                0x00000000       0x32 Library\src\timer.o
- .debug_frame   0x00000000       0xfc Library\src\timer.o
  .text          0x00000000        0x0 Library\src\system.o
  .data          0x00000000        0x0 Library\src\system.o
  .bss           0x00000000        0x0 Library\src\system.o
@@ -269,14 +256,10 @@ Discarded input sections
  .text          0x00000000        0x0 Library\src\adc.o
  .data          0x00000000        0x0 Library\src\adc.o
  .bss           0x00000000        0x0 Library\src\adc.o
- .bss.adc__data_s
-                0x00000000       0x10 Library\src\adc.o
- .text.adc__DummyConversion
+ .text.ADC__GetTempAdcValue
+                0x00000000       0x14 Library\src\adc.o
+ .text.ADC__SetIsObstacleFlag
                 0x00000000       0x18 Library\src\adc.o
- .text.adc__MeasureVref
-                0x00000000        0x8 Library\src\adc.o
- .text.ADC__CalcBattery
-                0x00000000        0xc Library\src\adc.o
  .text          0x00000000        0x0 e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/../../../../arm-atollic-eabi/lib/armv6-m\libc_s.a(lib_a-init.o)
  .data          0x00000000        0x0 e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/../../../../arm-atollic-eabi/lib/armv6-m\libc_s.a(lib_a-init.o)
  .bss           0x00000000        0x0 e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/../../../../arm-atollic-eabi/lib/armv6-m\libc_s.a(lib_a-init.o)
@@ -433,7 +416,7 @@ LOAD e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-ea
                 0x08000000                g_pfnVectors
                 0x080000c0                . = ALIGN (0x4)
 
-.text           0x080000c0     0x17c0
+.text           0x080000c0     0x21b8
                 0x080000c0                . = ALIGN (0x4)
  *(.text)
  .text          0x080000c0       0x48 e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/armv6-m/crtbegin.o
@@ -471,7 +454,6 @@ LOAD e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-ea
                 0x08000668        0x2 src\startup_stm32l053xx.o
                 0x08000668                DebugMon_Handler
                 0x08000668                TSC_IRQHandler
-                0x08000668                ADC1_COMP_IRQHandler
                 0x08000668                PVD_IRQHandler
                 0x08000668                I2C1_IRQHandler
                 0x08000668                RCC_CRS_IRQHandler
@@ -503,195 +485,255 @@ LOAD e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-ea
                 0x0800069c       0xe0 src\main.o
  .text.SysTick_Config
                 0x0800077c       0x48 src\main.o
- .text.main     0x080007c4       0x8c src\main.o
+ .text.main     0x080007c4       0xb0 src\main.o
                 0x080007c4                main
  .text.NMI_Handler
-                0x08000850        0x8 src\main.o
-                0x08000850                NMI_Handler
+                0x08000874        0x8 src\main.o
+                0x08000874                NMI_Handler
  .text.HardFault_Handler
-                0x08000858        0x8 src\main.o
-                0x08000858                HardFault_Handler
+                0x0800087c        0x8 src\main.o
+                0x0800087c                HardFault_Handler
  .text.SVC_Handler
-                0x08000860        0x8 src\main.o
-                0x08000860                SVC_Handler
+                0x08000884        0x8 src\main.o
+                0x08000884                SVC_Handler
  .text.PendSV_Handler
-                0x08000868        0x8 src\main.o
-                0x08000868                PendSV_Handler
+                0x0800088c        0x8 src\main.o
+                0x0800088c                PendSV_Handler
  .text.SysTick_Handler
-                0x08000870       0x14 src\main.o
-                0x08000870                SysTick_Handler
+                0x08000894       0x40 src\main.o
+                0x08000894                SysTick_Handler
  .text.EXTI4_15_IRQHandler
-                0x08000884       0x48 src\main.o
-                0x08000884                EXTI4_15_IRQHandler
+                0x080008d4       0x50 src\main.o
+                0x080008d4                EXTI4_15_IRQHandler
  .text.DMA1_Channel4_5_6_7_IRQHandler
-                0x080008cc       0x68 src\main.o
-                0x080008cc                DMA1_Channel4_5_6_7_IRQHandler
+                0x08000924       0x68 src\main.o
+                0x08000924                DMA1_Channel4_5_6_7_IRQHandler
+ .text.ADC1_COMP_IRQHandler
+                0x0800098c       0xb0 src\main.o
+                0x0800098c                ADC1_COMP_IRQHandler
  .text.NVIC_EnableIRQ
-                0x08000934       0x2c Library\src\uart.o
+                0x08000a3c       0x2c Library\src\uart.o
  .text.NVIC_SetPriority
-                0x08000960       0xe0 Library\src\uart.o
+                0x08000a68       0xe0 Library\src\uart.o
  .text.UART__Init
-                0x08000a40       0x54 Library\src\uart.o
-                0x08000a40                UART__Init
+                0x08000b48       0x54 Library\src\uart.o
+                0x08000b48                UART__Init
  .text.UART__DMAConfig
-                0x08000a94       0x98 Library\src\uart.o
-                0x08000a94                UART__DMAConfig
+                0x08000b9c       0x98 Library\src\uart.o
+                0x08000b9c                UART__DMAConfig
  .text.UART__StartDmaTransmision
-                0x08000b2c       0xc0 Library\src\uart.o
-                0x08000b2c                UART__StartDmaTransmision
+                0x08000c34      0x104 Library\src\uart.o
+                0x08000c34                UART__StartDmaTransmision
  .text.UART__RxInterrupt
-                0x08000bec       0x94 Library\src\uart.o
-                0x08000bec                UART__RxInterrupt
+                0x08000d38       0x94 Library\src\uart.o
+                0x08000d38                UART__RxInterrupt
  .text.UART__TxInterrupt
-                0x08000c80       0x18 Library\src\uart.o
-                0x08000c80                UART__TxInterrupt
- .text.UART__Poll
-                0x08000c98      0x134 Library\src\uart.o
-                0x08000c98                UART__Poll
- .text.UART__SetIntTempToSend
                 0x08000dcc       0x18 Library\src\uart.o
-                0x08000dcc                UART__SetIntTempToSend
+                0x08000dcc                UART__TxInterrupt
+ .text.UART__Poll
+                0x08000de4      0x2f0 Library\src\uart.o
+                0x08000de4                UART__Poll
+ .text.UART__SetIntTempToSend
+                0x080010d4       0x18 Library\src\uart.o
+                0x080010d4                UART__SetIntTempToSend
+ .text.UART__SetSharp1ToSend
+                0x080010ec       0x18 Library\src\uart.o
+                0x080010ec                UART__SetSharp1ToSend
+ .text.UART__SetSharpLewyPrzodToSend
+                0x08001104       0x18 Library\src\uart.o
+                0x08001104                UART__SetSharpLewyPrzodToSend
+ .text.UART__SetSharpPrawyPrzodToSend
+                0x0800111c       0x18 Library\src\uart.o
+                0x0800111c                UART__SetSharpPrawyPrzodToSend
+ .text.UART__SetSharpSrodekTylToSend
+                0x08001134       0x18 Library\src\uart.o
+                0x08001134                UART__SetSharpSrodekTylToSend
+ .text.UART__SetVrefToSend
+                0x0800114c       0x18 Library\src\uart.o
+                0x0800114c                UART__SetVrefToSend
+ .text.TIMER__InitClk
+                0x08001164       0xb8 Library\src\timer.o
+                0x08001164                TIMER__InitClk
+ .text.TIMER__PWM_DC1_2_ON
+                0x0800121c       0x80 Library\src\timer.o
+                0x0800121c                TIMER__PWM_DC1_2_ON
+ .text.TIMER__PWM_DC1_2_ALL_OFF
+                0x0800129c       0x40 Library\src\timer.o
+                0x0800129c                TIMER__PWM_DC1_2_ALL_OFF
+ .text.TIMER__PWM_DC1_2_OFF
+                0x080012dc       0x78 Library\src\timer.o
+                0x080012dc                TIMER__PWM_DC1_2_OFF
+ .text.TIMER__PWM_DC1_2_Change_Duty
+                0x08001354       0x64 Library\src\timer.o
+                0x08001354                TIMER__PWM_DC1_2_Change_Duty
  .text.SystemClock_Config
-                0x08000de4       0x9c Library\src\system.o
-                0x08000de4                SystemClock_Config
- .text.PWM__DC1_2_ON
-                0x08000e80       0x50 Library\src\motors.o
-                0x08000e80                PWM__DC1_2_ON
- .text.PWM__DC1_2_OFF
-                0x08000ed0       0x50 Library\src\motors.o
-                0x08000ed0                PWM__DC1_2_OFF
+                0x080013b8       0x9c Library\src\system.o
+                0x080013b8                SystemClock_Config
  .text.kolo_przod_prawe_do_przodu
-                0x08000f20       0x64 Library\src\motors.o
+                0x08001454       0x60 Library\src\motors.o
  .text.kolo_przod_prawe_do_tylu
-                0x08000f84       0x64 Library\src\motors.o
+                0x080014b4       0x60 Library\src\motors.o
  .text.kolo_przod_prawe_stop
-                0x08000fe8       0x64 Library\src\motors.o
+                0x08001514       0x60 Library\src\motors.o
  .text.kolo_przod_lewe_do_przodu
-                0x0800104c       0x64 Library\src\motors.o
+                0x08001574       0x60 Library\src\motors.o
  .text.kolo_przod_lewe_do_tylu
-                0x080010b0       0x60 Library\src\motors.o
+                0x080015d4       0x5c Library\src\motors.o
  .text.kolo_przod_lewe_stop
-                0x08001110       0x64 Library\src\motors.o
+                0x08001630       0x60 Library\src\motors.o
  .text.kolo_tyl_prawe_do_przodu
-                0x08001174       0x58 Library\src\motors.o
+                0x08001690       0x58 Library\src\motors.o
  .text.kolo_tyl_prawe_do_tylu
-                0x080011cc       0x54 Library\src\motors.o
+                0x080016e8       0x54 Library\src\motors.o
  .text.kolo_tyl_prawe_stop
-                0x08001220       0x58 Library\src\motors.o
+                0x0800173c       0x58 Library\src\motors.o
  .text.kolo_tyl_lewe_do_przodu
-                0x08001278       0x58 Library\src\motors.o
+                0x08001794       0x58 Library\src\motors.o
  .text.kolo_tyl_lewe_do_tylu
-                0x080012d0       0x58 Library\src\motors.o
+                0x080017ec       0x58 Library\src\motors.o
  .text.kolo_tyl_lewe_stop
-                0x08001328       0x58 Library\src\motors.o
+                0x08001844       0x58 Library\src\motors.o
  .text.MOTORS__skret_w_lewo
-                0x08001380       0x18 Library\src\motors.o
-                0x08001380                MOTORS__skret_w_lewo
+                0x0800189c       0x1c Library\src\motors.o
+                0x0800189c                MOTORS__skret_w_lewo
  .text.MOTORS__skret_w_prawo
-                0x08001398       0x18 Library\src\motors.o
-                0x08001398                MOTORS__skret_w_prawo
+                0x080018b8       0x1c Library\src\motors.o
+                0x080018b8                MOTORS__skret_w_prawo
  .text.MOTORS__jazda_do_tylu
-                0x080013b0       0x18 Library\src\motors.o
-                0x080013b0                MOTORS__jazda_do_tylu
+                0x080018d4       0x1c Library\src\motors.o
+                0x080018d4                MOTORS__jazda_do_tylu
  .text.MOTORS__jazda_do_przodu
-                0x080013c8       0x18 Library\src\motors.o
-                0x080013c8                MOTORS__jazda_do_przodu
+                0x080018f0       0x1c Library\src\motors.o
+                0x080018f0                MOTORS__jazda_do_przodu
  .text.MOTORS__jazda_zatrzymana
-                0x080013e0       0x18 Library\src\motors.o
-                0x080013e0                MOTORS__jazda_zatrzymana
+                0x0800190c       0x1c Library\src\motors.o
+                0x0800190c                MOTORS__jazda_zatrzymana
  .text.NVIC_EnableIRQ
-                0x080013f8       0x2c Library\src\gpio.o
+                0x08001928       0x2c Library\src\gpio.o
  .text.NVIC_SetPriority
-                0x08001424       0xe0 Library\src\gpio.o
+                0x08001954       0xe0 Library\src\gpio.o
  .text.GPIO__Init
-                0x08001504       0x4c Library\src\gpio.o
-                0x08001504                GPIO__Init
+                0x08001a34       0x4c Library\src\gpio.o
+                0x08001a34                GPIO__Init
  .text.GPIO__ConfigUART
-                0x08001550       0x7c Library\src\gpio.o
-                0x08001550                GPIO__ConfigUART
+                0x08001a80       0x7c Library\src\gpio.o
+                0x08001a80                GPIO__ConfigUART
  .text.GPIO__ConfigButton
-                0x080015cc       0x78 Library\src\gpio.o
-                0x080015cc                GPIO__ConfigButton
+                0x08001afc       0x78 Library\src\gpio.o
+                0x08001afc                GPIO__ConfigButton
+ .text.NVIC_EnableIRQ
+                0x08001b74       0x2c Library\src\adc.o
+ .text.NVIC_SetPriority
+                0x08001ba0       0xe0 Library\src\adc.o
  .text.adc__Init
-                0x08001644       0x1c Library\src\adc.o
- .text.adc__MeasureTemp
-                0x08001660       0xe0 Library\src\adc.o
+                0x08001c80      0x124 Library\src\adc.o
  .text.adc__ConvertTemperature
-                0x08001740       0x60 Library\src\adc.o
+                0x08001da4       0x60 Library\src\adc.o
  .text.ADC__DeInit
-                0x080017a0       0x48 Library\src\adc.o
-                0x080017a0                ADC__DeInit
- .text.ADC__CalcTemperature
-                0x080017e8       0x34 Library\src\adc.o
-                0x080017e8                ADC__CalcTemperature
+                0x08001e04       0x58 Library\src\adc.o
+                0x08001e04                ADC__DeInit
+ .text.ADC__MeasureAllAdc
+                0x08001e5c       0x4c Library\src\adc.o
+                0x08001e5c                ADC__MeasureAllAdc
+ .text.ADC__UpdateAdcStruct
+                0x08001ea8      0x104 Library\src\adc.o
+                0x08001ea8                ADC__UpdateAdcStruct
+ .text.ADC__GetSharp1MvValue
+                0x08001fac       0x14 Library\src\adc.o
+                0x08001fac                ADC__GetSharp1MvValue
+ .text.ADC__GetSharpPrzodLewyMvValue
+                0x08001fc0       0x14 Library\src\adc.o
+                0x08001fc0                ADC__GetSharpPrzodLewyMvValue
+ .text.ADC__GetSharpPrzodPrawyMvValue
+                0x08001fd4       0x14 Library\src\adc.o
+                0x08001fd4                ADC__GetSharpPrzodPrawyMvValue
+ .text.ADC__GetSharpTylSrodekMvValue
+                0x08001fe8       0x14 Library\src\adc.o
+                0x08001fe8                ADC__GetSharpTylSrodekMvValue
+ .text.ADC__GetVrefAdcValue
+                0x08001ffc       0x14 Library\src\adc.o
+                0x08001ffc                ADC__GetVrefAdcValue
+ .text.ADC__GetTempDegreeValue
+                0x08002010       0x14 Library\src\adc.o
+                0x08002010                ADC__GetTempDegreeValue
+ .text.ADC__ResetIsObstacleFlag
+                0x08002024       0x18 Library\src\adc.o
+                0x08002024                ADC__ResetIsObstacleFlag
+ .text.ADC__GetIsObstacleFlag
+                0x0800203c       0x20 Library\src\adc.o
+                0x0800203c                ADC__GetIsObstacleFlag
+ .text.ADC__Poll
+                0x0800205c      0x1b8 Library\src\adc.o
+                0x0800205c                ADC__Poll
  .text.__libc_init_array
-                0x0800181c       0x4c e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/../../../../arm-atollic-eabi/lib/armv6-m\libc_s.a(lib_a-init.o)
-                0x0800181c                __libc_init_array
+                0x08002214       0x4c e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/../../../../arm-atollic-eabi/lib/armv6-m\libc_s.a(lib_a-init.o)
+                0x08002214                __libc_init_array
  *(.glue_7)
  .glue_7        0x00000000        0x0 linker stubs
  *(.glue_7t)
  .glue_7t       0x00000000        0x0 linker stubs
  *(.eh_frame)
- .eh_frame      0x08001868        0x0 e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/armv6-m/crtbegin.o
+ .eh_frame      0x08002260        0x0 e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/armv6-m/crtbegin.o
  *(.init)
- .init          0x08001868        0x4 e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/armv6-m/crti.o
-                0x08001868                _init
- .init          0x0800186c        0x8 e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/armv6-m/crtn.o
+ .init          0x08002260        0x4 e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/armv6-m/crti.o
+                0x08002260                _init
+ .init          0x08002264        0x8 e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/armv6-m/crtn.o
  *(.fini)
- .fini          0x08001874        0x4 e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/armv6-m/crti.o
-                0x08001874                _fini
- .fini          0x08001878        0x8 e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/armv6-m/crtn.o
-                0x08001880                . = ALIGN (0x4)
-                0x08001880                _etext = .
+ .fini          0x0800226c        0x4 e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/armv6-m/crti.o
+                0x0800226c                _fini
+ .fini          0x08002270        0x8 e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/armv6-m/crtn.o
+                0x08002278                . = ALIGN (0x4)
+                0x08002278                _etext = .
 
-.vfp11_veneer   0x08001880        0x0
+.vfp11_veneer   0x08002278        0x0
  .vfp11_veneer  0x00000000        0x0 linker stubs
 
-.v4_bx          0x08001880        0x0
+.v4_bx          0x08002278        0x0
  .v4_bx         0x00000000        0x0 linker stubs
 
-.iplt           0x08001880        0x0
+.iplt           0x08002278        0x0
  .iplt          0x00000000        0x0 e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/armv6-m/crtbegin.o
 
-.rodata         0x08001880        0x8
-                0x08001880                . = ALIGN (0x4)
+.rodata         0x08002278       0x5c
+                0x08002278                . = ALIGN (0x4)
  *(.rodata)
- .rodata        0x08001880        0x8 Library\src\uart.o
+ .rodata        0x08002278        0x4 src\main.o
+ .rodata        0x0800227c       0x58 Library\src\uart.o
  *(.rodata*)
-                0x08001888                . = ALIGN (0x4)
+                0x080022d4                . = ALIGN (0x4)
 
-.rel.dyn        0x08001888        0x0
+.rel.dyn        0x080022d4        0x0
  .rel.iplt      0x00000000        0x0 e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/armv6-m/crtbegin.o
 
 .ARM.extab
  *(.ARM.extab* .gnu.linkonce.armextab.*)
 
-.ARM            0x08001888        0x0
-                0x08001888                __exidx_start = .
+.ARM            0x080022d4        0x0
+                0x080022d4                __exidx_start = .
  *(.ARM.exidx*)
-                0x08001888                __exidx_end = .
+                0x080022d4                __exidx_end = .
 
-.preinit_array  0x08001888        0x0
-                0x08001888                PROVIDE (__preinit_array_start, .)
+.preinit_array  0x080022d4        0x0
+                0x080022d4                PROVIDE (__preinit_array_start, .)
  *(.preinit_array*)
-                0x08001888                PROVIDE (__preinit_array_end, .)
+                0x080022d4                PROVIDE (__preinit_array_end, .)
 
-.init_array     0x08001888        0x4
-                0x08001888                PROVIDE (__init_array_start, .)
+.init_array     0x080022d4        0x4
+                0x080022d4                PROVIDE (__init_array_start, .)
  *(SORT(.init_array.*))
  *(.init_array*)
- .init_array    0x08001888        0x4 e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/armv6-m/crtbegin.o
-                0x0800188c                PROVIDE (__init_array_end, .)
+ .init_array    0x080022d4        0x4 e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/armv6-m/crtbegin.o
+                0x080022d8                PROVIDE (__init_array_end, .)
 
-.fini_array     0x0800188c        0x4
-                0x0800188c                PROVIDE (__fini_array_start, .)
+.fini_array     0x080022d8        0x4
+                0x080022d8                PROVIDE (__fini_array_start, .)
  *(SORT(.fini_array.*))
  *(.fini_array*)
- .fini_array    0x0800188c        0x4 e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/armv6-m/crtbegin.o
-                0x08001890                PROVIDE (__fini_array_end, .)
-                0x08001890                _sidata = LOADADDR (.data)
+ .fini_array    0x080022d8        0x4 e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/armv6-m/crtbegin.o
+                0x080022dc                PROVIDE (__fini_array_end, .)
+                0x080022dc                _sidata = LOADADDR (.data)
 
-.data           0x20000000       0x24 load address 0x08001890
+.data           0x20000000       0x24 load address 0x080022dc
                 0x20000000                . = ALIGN (0x4)
                 0x20000000                _sdata = .
  *(.data)
@@ -705,51 +747,59 @@ LOAD e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-ea
  .data.PLLMulTable
                 0x20000014        0xc src\system_stm32l0xx.o
                 0x20000014                PLLMulTable
- .data.data.5151
+ .data.data.5200
                 0x20000020        0x4 src\main.o
                 0x20000024                . = ALIGN (0x4)
                 0x20000024                _edata = .
 
-.igot.plt       0x20000024        0x0 load address 0x080018b4
+.igot.plt       0x20000024        0x0 load address 0x08002300
  .igot.plt      0x00000000        0x0 e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/armv6-m/crtbegin.o
                 0x20000024                . = ALIGN (0x4)
 
-.bss            0x20000024       0x50 load address 0x080018b4
+.bss            0x20000024       0xa0 load address 0x08002300
                 0x20000024                _sbss = .
                 0x20000024                __bss_start__ = _sbss
  *(.bss)
  .bss           0x20000024       0x1c e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/armv6-m/crtbegin.o
  *(.bss*)
- .bss.flag_1ms  0x20000040        0x1 src\main.o
-                0x20000040                flag_1ms
- *fill*         0x20000041        0x1 
- .bss.counter   0x20000042        0x2 src\main.o
-                0x20000042                counter
+ .bss.counter   0x20000040        0x2 src\main.o
+                0x20000040                counter
+ .bss.error     0x20000042        0x2 src\main.o
+                0x20000042                error
+ .bss.count_timer.5196
+                0x20000044        0x1 src\main.o
+ *fill*         0x20000045        0x3 
  .bss.uart__status_u
-                0x20000044        0x4 Library\src\uart.o
- .bss.index.4791
-                0x20000048        0x1 Library\src\uart.o
+                0x20000048        0x4 Library\src\uart.o
+ .bss.index.4878
+                0x2000004c        0x1 Library\src\uart.o
+ *fill*         0x2000004d        0x3 
+ .bss.adc__data_s
+                0x20000050       0x30 Library\src\adc.o
  *(COMMON)
- *fill*         0x20000049        0x3 
- COMMON         0x2000004c       0x24 Library\src\uart.o
-                0x2000004c                stringtoreceive
-                0x20000050                RxBuffer
-                0x2000005c                stringtosend
- COMMON         0x20000070        0x4 Library\src\adc.o
-                0x20000070                temperature_C
-                0x20000074                . = ALIGN (0x4)
-                0x20000074                _ebss = .
-                0x20000074                __bss_end__ = _ebss
+ COMMON         0x20000080       0x24 Library\src\uart.o
+                0x20000080                stringtoreceive
+                0x20000084                RxBuffer
+                0x20000090                stringtosend
+ COMMON         0x200000a4        0x2 Library\src\timer.o
+                0x200000a4                timer__data_u
+ *fill*         0x200000a6        0x2 
+ COMMON         0x200000a8       0x1c Library\src\adc.o
+                0x200000a8                CurrentChannel
+                0x200000ac                ADC_array
+                0x200000c4                . = ALIGN (0x4)
+                0x200000c4                _ebss = .
+                0x200000c4                __bss_end__ = _ebss
 
 ._user_heap_stack
-                0x20000074       0x80 load address 0x080018b4
-                0x20000074                . = ALIGN (0x4)
-                0x20000074                PROVIDE (end, .)
-                0x20000074                PROVIDE (_end, .)
-                0x20000074                . = (. + _Min_Heap_Size)
-                0x200000f4                . = (. + _Min_Stack_Size)
- *fill*         0x20000074       0x80 
-                0x200000f4                . = ALIGN (0x4)
+                0x200000c4       0x80 load address 0x08002300
+                0x200000c4                . = ALIGN (0x4)
+                0x200000c4                PROVIDE (end, .)
+                0x200000c4                PROVIDE (_end, .)
+                0x200000c4                . = (. + _Min_Heap_Size)
+                0x20000144                . = (. + _Min_Stack_Size)
+ *fill*         0x200000c4       0x80 
+                0x20000144                . = ALIGN (0x4)
 
 .memory_b1_text
  *(.mb1text)
@@ -780,48 +830,52 @@ LOAD e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-ea
  .ARM.attributes
                 0x00000102       0x32 Library\src\uart.o
  .ARM.attributes
-                0x00000134       0x32 Library\src\system.o
+                0x00000134       0x32 Library\src\timer.o
  .ARM.attributes
-                0x00000166       0x32 Library\src\motors.o
+                0x00000166       0x32 Library\src\system.o
  .ARM.attributes
-                0x00000198       0x32 Library\src\gpio.o
+                0x00000198       0x32 Library\src\motors.o
  .ARM.attributes
-                0x000001ca       0x32 Library\src\adc.o
+                0x000001ca       0x32 Library\src\gpio.o
  .ARM.attributes
-                0x000001fc       0x2c e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/../../../../arm-atollic-eabi/lib/armv6-m\libc_s.a(lib_a-init.o)
+                0x000001fc       0x32 Library\src\adc.o
  .ARM.attributes
-                0x00000228       0x1e e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/armv6-m\libgcc.a(_udivsi3.o)
+                0x0000022e       0x2c e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/../../../../arm-atollic-eabi/lib/armv6-m\libc_s.a(lib_a-init.o)
  .ARM.attributes
-                0x00000246       0x1e e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/armv6-m\libgcc.a(_divsi3.o)
+                0x0000025a       0x1e e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/armv6-m\libgcc.a(_udivsi3.o)
  .ARM.attributes
-                0x00000264       0x1e e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/armv6-m\libgcc.a(_dvmd_tls.o)
+                0x00000278       0x1e e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/armv6-m\libgcc.a(_divsi3.o)
  .ARM.attributes
-                0x00000282       0x1e e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/armv6-m/crtn.o
+                0x00000296       0x1e e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/armv6-m\libgcc.a(_dvmd_tls.o)
+ .ARM.attributes
+                0x000002b4       0x1e e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/armv6-m/crtn.o
 OUTPUT(Robot.elf elf32-littlearm)
 
-.debug_info     0x00000000     0x3213
+.debug_info     0x00000000     0x40da
  .debug_info    0x00000000      0xbc2 src\tiny_printf.o
  .debug_info    0x00000bc2      0x343 src\system_stm32l0xx.o
  .debug_info    0x00000f05       0x82 src\startup_stm32l053xx.o
- .debug_info    0x00000f87      0x7a5 src\main.o
- .debug_info    0x0000172c      0x8ee Library\src\uart.o
- .debug_info    0x0000201a      0x27e Library\src\system.o
- .debug_info    0x00002298      0x3ef Library\src\motors.o
- .debug_info    0x00002687      0x6ee Library\src\gpio.o
- .debug_info    0x00002d75      0x49e Library\src\adc.o
+ .debug_info    0x00000f87      0x98b src\main.o
+ .debug_info    0x00001912      0xaa7 Library\src\uart.o
+ .debug_info    0x000023b9      0x68d Library\src\timer.o
+ .debug_info    0x00002a46      0x27e Library\src\system.o
+ .debug_info    0x00002cc4      0x3cb Library\src\motors.o
+ .debug_info    0x0000308f      0x6ee Library\src\gpio.o
+ .debug_info    0x0000377d      0x95d Library\src\adc.o
 
-.debug_abbrev   0x00000000      0xbbc
+.debug_abbrev   0x00000000      0xe86
  .debug_abbrev  0x00000000      0x248 src\tiny_printf.o
  .debug_abbrev  0x00000248       0xf0 src\system_stm32l0xx.o
  .debug_abbrev  0x00000338       0x12 src\startup_stm32l053xx.o
- .debug_abbrev  0x0000034a      0x1d1 src\main.o
- .debug_abbrev  0x0000051b      0x256 Library\src\uart.o
- .debug_abbrev  0x00000771       0x8e Library\src\system.o
- .debug_abbrev  0x000007ff       0xfa Library\src\motors.o
- .debug_abbrev  0x000008f9      0x150 Library\src\gpio.o
- .debug_abbrev  0x00000a49      0x173 Library\src\adc.o
+ .debug_abbrev  0x0000034a      0x226 src\main.o
+ .debug_abbrev  0x00000570      0x250 Library\src\uart.o
+ .debug_abbrev  0x000007c0      0x197 Library\src\timer.o
+ .debug_abbrev  0x00000957       0x8e Library\src\system.o
+ .debug_abbrev  0x000009e5       0xcc Library\src\motors.o
+ .debug_abbrev  0x00000ab1      0x150 Library\src\gpio.o
+ .debug_abbrev  0x00000c01      0x285 Library\src\adc.o
 
-.debug_aranges  0x00000000      0x300
+.debug_aranges  0x00000000      0x3e8
  .debug_aranges
                 0x00000000       0x60 src\tiny_printf.o
  .debug_aranges
@@ -829,57 +883,63 @@ OUTPUT(Robot.elf elf32-littlearm)
  .debug_aranges
                 0x00000088       0x28 src\startup_stm32l053xx.o
  .debug_aranges
-                0x000000b0       0x70 src\main.o
+                0x000000b0       0x78 src\main.o
  .debug_aranges
-                0x00000120       0x60 Library\src\uart.o
+                0x00000128       0x88 Library\src\uart.o
  .debug_aranges
-                0x00000180       0x20 Library\src\system.o
+                0x000001b0       0x78 Library\src\timer.o
  .debug_aranges
-                0x000001a0       0xb0 Library\src\motors.o
+                0x00000228       0x20 Library\src\system.o
  .debug_aranges
-                0x00000250       0x58 Library\src\gpio.o
+                0x00000248       0xa0 Library\src\motors.o
  .debug_aranges
-                0x000002a8       0x58 Library\src\adc.o
+                0x000002e8       0x58 Library\src\gpio.o
+ .debug_aranges
+                0x00000340       0xa8 Library\src\adc.o
 
-.debug_ranges   0x00000000      0x278
+.debug_ranges   0x00000000      0x350
  .debug_ranges  0x00000000       0x50 src\tiny_printf.o
  .debug_ranges  0x00000050       0x18 src\system_stm32l0xx.o
  .debug_ranges  0x00000068       0x20 src\startup_stm32l053xx.o
- .debug_ranges  0x00000088       0x60 src\main.o
- .debug_ranges  0x000000e8       0x50 Library\src\uart.o
- .debug_ranges  0x00000138       0x10 Library\src\system.o
- .debug_ranges  0x00000148       0xa0 Library\src\motors.o
- .debug_ranges  0x000001e8       0x48 Library\src\gpio.o
- .debug_ranges  0x00000230       0x48 Library\src\adc.o
+ .debug_ranges  0x00000088       0x68 src\main.o
+ .debug_ranges  0x000000f0       0x78 Library\src\uart.o
+ .debug_ranges  0x00000168       0x68 Library\src\timer.o
+ .debug_ranges  0x000001d0       0x10 Library\src\system.o
+ .debug_ranges  0x000001e0       0x90 Library\src\motors.o
+ .debug_ranges  0x00000270       0x48 Library\src\gpio.o
+ .debug_ranges  0x000002b8       0x98 Library\src\adc.o
 
-.debug_line     0x00000000     0x12cb
+.debug_line     0x00000000     0x1788
  .debug_line    0x00000000      0x296 src\tiny_printf.o
  .debug_line    0x00000296      0x19b src\system_stm32l0xx.o
  .debug_line    0x00000431       0x7f src\startup_stm32l053xx.o
- .debug_line    0x000004b0      0x2a3 src\main.o
- .debug_line    0x00000753      0x2e8 Library\src\uart.o
- .debug_line    0x00000a3b      0x165 Library\src\system.o
- .debug_line    0x00000ba0      0x31d Library\src\motors.o
- .debug_line    0x00000ebd      0x20e Library\src\gpio.o
- .debug_line    0x000010cb      0x200 Library\src\adc.o
+ .debug_line    0x000004b0      0x2e3 src\main.o
+ .debug_line    0x00000793      0x326 Library\src\uart.o
+ .debug_line    0x00000ab9      0x298 Library\src\timer.o
+ .debug_line    0x00000d51      0x165 Library\src\system.o
+ .debug_line    0x00000eb6      0x2e8 Library\src\motors.o
+ .debug_line    0x0000119e      0x20e Library\src\gpio.o
+ .debug_line    0x000013ac      0x3dc Library\src\adc.o
 
-.debug_str      0x00000000     0x101c
+.debug_str      0x00000000     0x14ff
  .debug_str     0x00000000      0x576 src\tiny_printf.o
                                 0x5ed (size before relaxing)
  .debug_str     0x00000576      0x162 src\system_stm32l0xx.o
                                 0x2dc (size before relaxing)
- .debug_str     0x000006d8      0x38b src\main.o
-                                0x5e7 (size before relaxing)
- .debug_str     0x00000a63      0x17d Library\src\uart.o
-                                0x65b (size before relaxing)
- .debug_str     0x00000be0       0x6d Library\src\system.o
+ .debug_str     0x000006d8      0x488 src\main.o
+                                0x6fd (size before relaxing)
+ .debug_str     0x00000b60      0x25d Library\src\uart.o
+                                0x74c (size before relaxing)
+ .debug_str     0x00000dbd      0x1d0 Library\src\timer.o
+                                0x516 (size before relaxing)
+ .debug_str     0x00000f8d       0x6d Library\src\system.o
                                 0x282 (size before relaxing)
- .debug_str     0x00000c4d      0x1bd Library\src\motors.o
-                                0x436 (size before relaxing)
- .debug_str     0x00000e0a       0xa9 Library\src\gpio.o
+ .debug_str     0x00000ffa      0x1a0 Library\src\motors.o
+                                0x419 (size before relaxing)
+ .debug_str     0x0000119a       0x9d Library\src\gpio.o
                                 0x574 (size before relaxing)
- .debug_str     0x00000eb3      0x169 Library\src\adc.o
-                                0x3ef (size before relaxing)
+ .debug_str     0x00001237      0x2c8 Library\src\adc.o
+                                0x842 (size before relaxing)
 
 .comment        0x00000000       0x82
  .comment       0x00000000       0x82 src\tiny_printf.o
@@ -887,34 +947,62 @@ OUTPUT(Robot.elf elf32-littlearm)
  .comment       0x00000000       0x83 src\system_stm32l0xx.o
  .comment       0x00000000       0x83 src\main.o
  .comment       0x00000000       0x83 Library\src\uart.o
+ .comment       0x00000000       0x83 Library\src\timer.o
  .comment       0x00000000       0x83 Library\src\system.o
  .comment       0x00000000       0x83 Library\src\motors.o
  .comment       0x00000000       0x83 Library\src\gpio.o
  .comment       0x00000000       0x83 Library\src\adc.o
 
-.debug_frame    0x00000000      0x8c4
+.debug_frame    0x00000000      0xbd0
  .debug_frame   0x00000000      0x140 src\tiny_printf.o
  .debug_frame   0x00000140       0x4c src\system_stm32l0xx.o
- .debug_frame   0x0000018c      0x154 src\main.o
- .debug_frame   0x000002e0      0x124 Library\src\uart.o
- .debug_frame   0x00000404       0x2c Library\src\system.o
- .debug_frame   0x00000430      0x224 Library\src\motors.o
- .debug_frame   0x00000654      0x110 Library\src\gpio.o
- .debug_frame   0x00000764       0xf4 Library\src\adc.o
- .debug_frame   0x00000858       0x2c e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/../../../../arm-atollic-eabi/lib/armv6-m\libc_s.a(lib_a-init.o)
- .debug_frame   0x00000884       0x20 e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/armv6-m\libgcc.a(_udivsi3.o)
- .debug_frame   0x000008a4       0x20 e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/armv6-m\libgcc.a(_divsi3.o)
+ .debug_frame   0x0000018c      0x170 src\main.o
+ .debug_frame   0x000002fc      0x1b0 Library\src\uart.o
+ .debug_frame   0x000004ac      0x170 Library\src\timer.o
+ .debug_frame   0x0000061c       0x2c Library\src\system.o
+ .debug_frame   0x00000648      0x1ec Library\src\motors.o
+ .debug_frame   0x00000834      0x110 Library\src\gpio.o
+ .debug_frame   0x00000944      0x220 Library\src\adc.o
+ .debug_frame   0x00000b64       0x2c e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/../../../../arm-atollic-eabi/lib/armv6-m\libc_s.a(lib_a-init.o)
+ .debug_frame   0x00000b90       0x20 e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/armv6-m\libgcc.a(_udivsi3.o)
+ .debug_frame   0x00000bb0       0x20 e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/armv6-m\libgcc.a(_divsi3.o)
 
 Cross Reference Table
 
 Symbol                                            File
-ADC1_COMP_IRQHandler                              src\startup_stm32l053xx.o
-ADC__CalcBattery                                  Library\src\adc.o
-ADC__CalcTemperature                              Library\src\adc.o
-                                                  src\main.o
+ADC1_COMP_IRQHandler                              src\main.o
+                                                  src\startup_stm32l053xx.o
 ADC__DeInit                                       Library\src\adc.o
+                                                  src\main.o
+ADC__GetIsObstacleFlag                            Library\src\adc.o
+                                                  Library\src\uart.o
+ADC__GetSharp1MvValue                             Library\src\adc.o
+                                                  Library\src\uart.o
+ADC__GetSharpPrzodLewyMvValue                     Library\src\adc.o
+                                                  Library\src\uart.o
+ADC__GetSharpPrzodPrawyMvValue                    Library\src\adc.o
+                                                  Library\src\uart.o
+ADC__GetSharpTylSrodekMvValue                     Library\src\adc.o
+                                                  Library\src\uart.o
+ADC__GetTempAdcValue                              Library\src\adc.o
+ADC__GetTempDegreeValue                           Library\src\adc.o
+                                                  Library\src\uart.o
+ADC__GetVrefAdcValue                              Library\src\adc.o
+                                                  Library\src\uart.o
+ADC__MeasureAllAdc                                Library\src\adc.o
+ADC__Poll                                         Library\src\adc.o
+                                                  src\main.o
+ADC__ResetIsObstacleFlag                          Library\src\adc.o
+                                                  src\main.o
+ADC__SetIsObstacleFlag                            Library\src\adc.o
+ADC__UpdateAdcStruct                              Library\src\adc.o
+                                                  src\main.o
+ADC_array                                         Library\src\adc.o
+                                                  src\main.o
 AHBPrescTable                                     src\system_stm32l0xx.o
 BUTTON__Init                                      Library\src\button_engine.o
+CurrentChannel                                    Library\src\adc.o
+                                                  src\main.o
 DEVICE__MENU                                      Library\src\device.o
 DEVICE__ResetSTM                                  Library\src\device.o
 DEVICE__SleepPoll                                 Library\src\device.o
@@ -963,10 +1051,13 @@ LED__RGB                                          Library\src\led.o
 LPTIM1_IRQHandler                                 src\startup_stm32l053xx.o
 LSI_measured_frequency                            Library\src\rtc.o
 MOTORS__jazda_do_przodu                           Library\src\motors.o
+                                                  Library\src\adc.o
                                                   Library\src\uart.o
 MOTORS__jazda_do_tylu                             Library\src\motors.o
+                                                  Library\src\adc.o
                                                   Library\src\uart.o
 MOTORS__jazda_zatrzymana                          Library\src\motors.o
+                                                  Library\src\adc.o
                                                   Library\src\uart.o
                                                   src\main.o
 MOTORS__skret_w_lewo                              Library\src\motors.o
@@ -977,8 +1068,6 @@ NMI_Handler                                       src\main.o
                                                   src\startup_stm32l053xx.o
 PLLMulTable                                       src\system_stm32l0xx.o
 PVD_IRQHandler                                    src\startup_stm32l053xx.o
-PWM__DC1_2_OFF                                    Library\src\motors.o
-PWM__DC1_2_ON                                     Library\src\motors.o
 PendSV_Handler                                    src\main.o
                                                   src\startup_stm32l053xx.o
 RCC_CRS_IRQHandler                                src\startup_stm32l053xx.o
@@ -1013,8 +1102,17 @@ TIMER__Delay10us                                  Library\src\timer.o
 TIMER__DelayMs                                    Library\src\timer.o
 TIMER__GetStatus                                  Library\src\timer.o
 TIMER__InitClk                                    Library\src\timer.o
+                                                  src\main.o
 TIMER__InitInterruptTim4Isr                       Library\src\timer.o
 TIMER__InitSystemTimer                            Library\src\timer.o
+TIMER__PWM_DC1_2_ALL_OFF                          Library\src\timer.o
+TIMER__PWM_DC1_2_Change_Duty                      Library\src\timer.o
+                                                  Library\src\adc.o
+                                                  Library\src\uart.o
+TIMER__PWM_DC1_2_OFF                              Library\src\timer.o
+                                                  Library\src\motors.o
+TIMER__PWM_DC1_2_ON                               Library\src\timer.o
+                                                  Library\src\motors.o
 TIMER__Poll                                       Library\src\timer.o
 TIMER__SetFlag                                    Library\src\timer.o
 TSC_IRQHandler                                    src\startup_stm32l053xx.o
@@ -1027,6 +1125,16 @@ UART__Poll                                        Library\src\uart.o
 UART__RxInterrupt                                 Library\src\uart.o
                                                   src\main.o
 UART__SetIntTempToSend                            Library\src\uart.o
+                                                  src\main.o
+UART__SetSharp1ToSend                             Library\src\uart.o
+                                                  src\main.o
+UART__SetSharpLewyPrzodToSend                     Library\src\uart.o
+                                                  src\main.o
+UART__SetSharpPrawyPrzodToSend                    Library\src\uart.o
+                                                  src\main.o
+UART__SetSharpSrodekTylToSend                     Library\src\uart.o
+                                                  src\main.o
+UART__SetVrefToSend                               Library\src\uart.o
                                                   src\main.o
 UART__StartDmaTransmision                         Library\src\uart.o
                                                   src\main.o
@@ -1045,6 +1153,7 @@ __aeabi_idiv0                                     e:/programy/truestudio for arm
 __aeabi_idivmod                                   e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/armv6-m\libgcc.a(_divsi3.o)
 __aeabi_ldiv0                                     e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/armv6-m\libgcc.a(_dvmd_tls.o)
 __aeabi_uidiv                                     e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/armv6-m\libgcc.a(_udivsi3.o)
+                                                  Library\src\adc.o
                                                   Library\src\uart.o
                                                   src\system_stm32l0xx.o
                                                   src\tiny_printf.o
@@ -1115,8 +1224,8 @@ environ                                           e:/programy/truestudio for arm
 errno                                             e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/../../../../arm-atollic-eabi/lib/armv6-m\libc_s.a(lib_a-sbrkr.o)
                                                   e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/../../../../arm-atollic-eabi/lib/armv6-m\libc_s.a(lib_a-reent.o)
                                                   e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/../../../../arm-atollic-eabi/lib/armv6-m\libc_s.a(lib_a-syscalls.o)
+error                                             src\main.o
 fiprintf                                          src\tiny_printf.o
-flag_1ms                                          src\main.o
 fprintf                                           src\tiny_printf.o
 fputs                                             src\tiny_printf.o
 fwrite                                            src\tiny_printf.o
@@ -1135,8 +1244,9 @@ stringtoreceive                                   Library\src\uart.o
 stringtosend                                      Library\src\uart.o
 strlen                                            e:/programy/truestudio for arm 5.4.0/armtools/bin/../lib/gcc/arm-atollic-eabi/4.8.3/../../../../arm-atollic-eabi/lib/armv6-m\libc_s.a(lib_a-strlen.o)
                                                   src\tiny_printf.o
-temperature_C                                     Library\src\adc.o
-                                                  Library\src\uart.o
+timer__data_u                                     Library\src\adc.o
+                                                  Library\src\timer.o
+                                                  src\main.o
 ts_formatlength                                   src\tiny_printf.o
 ts_formatstring                                   src\tiny_printf.o
 ts_itoa                                           src\tiny_printf.o

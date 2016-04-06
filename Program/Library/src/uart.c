@@ -23,7 +23,7 @@ extern "C"
 #include "uart.h"
 #include "adc.h"
 #include "motors.h"
-
+#include "timer.h"
 /****************************************************************************/
 /*                      DECLARATION AND DEFINITIONS                         */
 /****************************************************************************/
@@ -41,9 +41,16 @@ static volatile union uart__status_u
     uint8_t rxBusyFlag: 1;
     uint8_t receivedData: 1;
     uint8_t sendInternalTemp: 1;
+    uint8_t sendSharp1 : 1;
+    uint8_t sendSharpPrzodLewy : 1;
+    uint8_t sendSharpPrzodPrawy : 1;
+    uint8_t sendSharpTylSrodek : 1;
+    uint8_t sendVrefValue:1;
+    uint8_t sendPWMValue:1;
     uint8_t flag5: 1;
     uint8_t fullTransmision: 1;
     uint8_t flag7: 1;
+    uint8_t Pwm_value;
   };
 }
 uart__status_u = {0}; /* Uart__status_u union declaraction. The variable name
@@ -133,21 +140,34 @@ read from this memory after the peripheral event.*/
 
 }
 
-void UART__StartDmaTransmision(uint8_t* data, uint8_t length)
+void UART__StartDmaTransmision(int8_t* data, int8_t* additional_text,
+                               uint8_t length, int8_t* message)
 {
-  int i;
-  length += 2; // na znak konca lini
+  int i,j,h = 0;
+  length += 4; // na znak konca lini i bit startu
   if(length > 20)
   {
     length = 20;
   }
-  for(i = 0; i < (length - 2); i++)
+  stringtosend[0] = 0x02; // start byte
+  stringtosend[1] = message[0]; // T
+  for(i = 2; i < (length - 2); i++)
   {
-    stringtosend[i] = data[i];
-    if(data[i] == 0)
+    stringtosend[i] = data[i-2];
+    if(data[i-2] == 0)
     {
-      length = i+2; // wyjdz z fora i jednoczesnie miej miejsce na lf
-      i = length;
+      for(j = i; j < (length - 2); j++)
+      {
+        stringtosend[j] = additional_text[h];
+        if(additional_text[h] == 0)
+        {
+          length = j+2;
+          j = 21;
+        }
+        h++;
+      }
+      // wyjdz z fora i jednoczesnie miej miejsce na lf
+      i = 21;
     }
   }
   stringtosend[length-2] = 10;
@@ -194,49 +214,50 @@ void UART__TxInterrupt(void)
 
 void UART__Poll(void)
 {
-  uint8_t data[4];
+  int8_t data[4];
 
   if(uart__status_u.receivedData)
   {
 
     if(RxBuffer[0] == 49 && RxBuffer[1] == 49)
     {
-      MOTORS__jazda_do_przodu();
-      GPIOA->ODR ^= (1 << 5);//toggle green led on PA5
+      MOTORS__jazda_do_tylu();
+      MOTORS__SetLastDirection(JAZDA_DO_TYLU);
+      OBSTACLE__ClearAvoidObstacleIsrFlag();
     }
     else if(RxBuffer[0] == 49 && RxBuffer[1] == 48)
     {
       MOTORS__skret_w_lewo();
+      MOTORS__SetLastDirection(JAZDA_W_LEWO);
+      OBSTACLE__ClearAvoidObstacleIsrFlag();
     }
     else if(RxBuffer[0] == 50 && RxBuffer[1] == 50)
     {
       MOTORS__jazda_zatrzymana();
-      //PWM wypelnienie 0
-//        analogWrite(5, 0);
-//        analogWrite(3, 0);
+      MOTORS__SetLastDirection(JAZDA_ZATRZYMANA);
+      OBSTACLE__ClearAvoidObstacleIsrFlag();
     }
     else if(RxBuffer[0] == 50 && RxBuffer[1] == 48)
     {
       MOTORS__skret_w_prawo();
+      MOTORS__SetLastDirection(JAZDA_W_PRAWO);
+      OBSTACLE__ClearAvoidObstacleIsrFlag();
     }
     else if(RxBuffer[0] == 50 && RxBuffer[1] == 53)
     {
-      MOTORS__jazda_do_tylu();
+      MOTORS__jazda_do_przodu();
+      MOTORS__SetLastDirection(JAZDA_DO_PRZODU);
+      OBSTACLE__ClearAvoidObstacleIsrFlag();
     }
     else if(RxBuffer[0] == 37)
     {
-      //Serial.print("PWM VALUE IS ");
-      //Serial.println(buffor[1], DEC);
-      if(RxBuffer[1] < 195)
+      if(!ADC__GetIsObstacleFlag())
       {
-//          analogWrite(5, buffor[1]);
-//          analogWrite(3, buffor[1]);
+        uart__status_u.Pwm_value = RxBuffer[1];
+        TIMER__PWM_DC1_2_Change_Duty(uart__status_u.Pwm_value);
+        //uart__status_u.sendPWMValue = 1;
       }
-      else
-      {
-//          analogWrite(5, 255);
-//          analogWrite(3, 255);
-      }
+
     }
 
     uart__status_u.receivedData = 0;
@@ -249,14 +270,62 @@ void UART__Poll(void)
 
       uart__status_u.sendInternalTemp = 0;
 
-      sprintf(data, "%d", (int)temperature_C);
-
-
-      UART__StartDmaTransmision(data, 2);
-      UART__StartDmaTransmision("*C", 2);
+      sprintf(data, "%d", (int)ADC__GetTempDegreeValue());
+      UART__StartDmaTransmision(data, "", 2,"T");
 
     }
-  }
+    else if(uart__status_u.sendSharp1)
+    {
+
+      uart__status_u.sendSharp1 = 0;
+
+      sprintf(data, "%d", (int)ADC__GetSharp1MvValue());
+      UART__StartDmaTransmision(data,"", 0,"B");
+
+    }
+    else if(uart__status_u.sendSharpPrzodLewy)
+    {
+
+      uart__status_u.sendSharpPrzodLewy = 0;
+
+      sprintf(data, "%d", (int)ADC__GetSharpPrzodLewyMvValue());
+      UART__StartDmaTransmision(data,"", 0,"A");
+
+    }
+    else if(uart__status_u.sendSharpPrzodPrawy)
+    {
+
+      uart__status_u.sendSharpPrzodPrawy = 0;
+
+      sprintf(data, "%d", (int)ADC__GetSharpPrzodPrawyMvValue());
+      UART__StartDmaTransmision(data,"", 0,"C");
+
+    }
+    else if(uart__status_u.sendSharpTylSrodek)
+    {
+
+      uart__status_u.sendSharpTylSrodek = 0;
+
+      sprintf(data, "%d", (int)ADC__GetSharpTylSrodekMvValue());
+      UART__StartDmaTransmision(data,"", 0,"E");
+
+    }
+    else if(uart__status_u.sendVrefValue)
+    {
+      uart__status_u.sendVrefValue = 0;
+
+      sprintf(data, "%d", (int)ADC__GetVrefAdcValue());
+      UART__StartDmaTransmision(data," Vref", 9,"V");
+
+    }
+    else if(uart__status_u.sendPWMValue)
+    {
+      uart__status_u.sendPWMValue = 0;
+      sprintf(data, "%d", (int)uart__status_u.Pwm_value);
+      UART__StartDmaTransmision(data, " PWM value", 12,"P");
+    }
+
+   }
 
 }
 
@@ -269,6 +338,42 @@ void UART__SetIntTempToSend(void)
 }
 
 /******************************* END FUNCTION *********************************/
+
+void UART__SetSharp1ToSend(void)
+{
+  uart__status_u.sendSharp1 = 1;
+}
+
+/******************************* END FUNCTION *********************************/
+
+void UART__SetSharpLewyPrzodToSend(void)
+{
+  uart__status_u.sendSharpPrzodLewy = 1;
+}
+
+/******************************* END FUNCTION *********************************/
+
+void UART__SetSharpPrawyPrzodToSend(void)
+{
+  uart__status_u.sendSharpPrzodPrawy = 1;
+}
+
+/******************************* END FUNCTION *********************************/
+
+void UART__SetSharpSrodekTylToSend(void)
+{
+  uart__status_u.sendSharpTylSrodek = 1;
+}
+/******************************* END FUNCTION *********************************/
+
+void UART__SetVrefToSend(void)
+{
+  uart__status_u.sendVrefValue = 1;
+}
+
+/******************************* END FUNCTION *********************************/
+
+
 
 
 #ifdef __cplusplus
