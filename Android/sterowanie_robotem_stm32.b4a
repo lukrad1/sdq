@@ -643,8 +643,10 @@ Sub Checkbox1_CheckedChange(Checked As Boolean)
 		RemoveViews
 		Activity.LoadLayout("video_robot")
 		Create_Window
-		webview1.LoadUrl("http://192.168.1.53:9000/?action=stream")
-		
+		'webview1.LoadUrl("http://192.168.1.53:9000/?action=stream")
+		'webview1.LoadUrl("http://192.168.1.53:9000/?action=stream?user=lukrad1&pwd=junak63")
+		webview1.LoadUrl("http://lukrad1.ddns.net:9000/?action=stream")
+	End If
 End Sub
 
 Sub Button1_Click
