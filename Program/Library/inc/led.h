@@ -118,7 +118,7 @@ void LED__RGB(uint8_t red, uint8_t green, uint8_t blue);
 * In this function are checking all timer flags. It is running in while(1) loop.
 *
 */
-void LED__Poll(void);
+void LED__1msPoll(void);
 
 /**
 * \brief Function which gets led red duty value.

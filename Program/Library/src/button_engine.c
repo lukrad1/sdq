@@ -19,7 +19,7 @@
 /* local library */
 
 #include "main.h"
-
+#include "gpio.h"
 /****************************************************************************/
 /*                      DECLARATION AND DEFINITIONS                         */
 /****************************************************************************/
@@ -35,7 +35,7 @@
 
 /* Global variable declaration */
 
-
+volatile uint8_t BUTTON__Exti_flag = 0;
 
 /****************************************************************************/
 /*                  FUNCTIONS DECLARATIONS AND DEFINITIONS                  */
@@ -49,11 +49,24 @@
 
 void BUTTON__Init(void)
 {
-	
+  GPIO__ConfigButton(1);
 }
 
 /******************************* END FUNCTION *********************************/
 
+void BUTTON__SetExtiButtonFlag(void)
+{
+  BUTTON__Exti_flag = 1;
+}
+
+void BUTTON__ClearExtiButtonFlag(void)
+{
+  BUTTON__Exti_flag = 0;
+}
+uint8_t BUTTON__GetExtiButtonFlag(void)
+{
+  return BUTTON__Exti_flag;
+}
 #ifdef __cplusplus
   }
 #endif

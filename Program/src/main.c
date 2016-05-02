@@ -28,6 +28,7 @@ extern "C"
 #include "uart.h"
 #include "motors.h"
 #include "obstacle.h"
+#include "button_engine.h"
 /****************************************************************************/
 /*                      DECLARATION AND DEFINITIONS                         */
 /****************************************************************************/
@@ -43,7 +44,6 @@ extern "C"
 /* Global variable declaration */
 /* for example: extern unsigned int module_variable_1; */
 
-uint16_t counter = 0;
 volatile uint16_t error = 0;  //initialized at 0 and modified by the functions
 /****************************************************************************/
 /*                  FUNCTIONS DECLARATIONS AND DEFINITIONS                  */
@@ -70,13 +70,13 @@ int main(void)
   GPIO__Init();
   TIMER__InitClk();
   SysTick_Config(4000); /* 1ms config */
-  GPIO__ConfigUART(1);
   UART__DMAConfig();
   UART__Init(UART__BAUDRATE_19200);
-  GPIO__ConfigButton(1);
+  BUTTON__Init();
   GPIO__ConfigEnkoders(1);
   ADC__ResetIsObstacleFlag();
   MOTORS__jazda_zatrzymana();
+
   //Zezwolenie na przerwanie globalne
   //  __enable_irq(); // po resecie przerwania sa zalaczone z automatu
   /* Infinite loop */
@@ -85,29 +85,11 @@ int main(void)
   while(1)
   {
 
-    if(timer__data_u.time_1ms_flag)
-    {
-      timer__data_u.time_1ms_flag = 0;
-
-      OBSTACLE__1msPoll();
-      counter++;
-    }
-
-    if(counter >= 3000)
-    {
-
-//      UART__SetSharp1ToSend();
-//      UART__SetVrefToSend();
-      UART__SetIntTempToSend();
-//      UART__SetSharpLewyPrzodToSend();
-//      UART__SetSharpPrawyPrzodToSend();
-//      UART__SetSharpSrodekTylToSend();
-
-      counter = 0;
-    }
+    SYSTEM__1msPoll();
+    SYSTEM__30sPoll();
 
     UART__Poll();
-    ADC__Poll();
+
   }
 }
 
@@ -164,16 +146,8 @@ void PendSV_Handler(void)
  */
 void SysTick_Handler(void)
 {
-  static uint8_t count_timer = 0;
-  timer__data_u.time_1ms_flag = 1;
-
+  SYSTEM__1msTick();
   //GPIOC->ODR ^= (1 << 11);//toggle enkoders pin on PC11
-  count_timer++;
-  if(count_timer >= 2)
-  {
-    count_timer = 0;
-    timer__data_u.time_adc_2ms_flag = 1;
-  }
 }
 
 /******************************************************************************/
@@ -198,8 +172,6 @@ void EXTI4_15_IRQHandler(void)
     EXTI->PR |= EXTI_PR_PR10;
 
     OBSTACLE__EnkoderInterrupt();
-
-
   }
 
   if((EXTI->PR & EXTI_PR_PR13) == EXTI_PR_PR13)
@@ -207,8 +179,7 @@ void EXTI4_15_IRQHandler(void)
     /* Clear EXTI 0 flag */
     // zerujemy flage przerwania ale UWAGA!!! Tutaj zerujemy ja JEDYNKA, a nie zerem !!!!
     EXTI->PR |= EXTI_PR_PR13;
-
-
+    BUTTON__SetExtiButtonFlag();
     GPIOA->ODR ^= (1 << 5);//toggle green led on PA5
     UART__StartDmaTransmision(data,"", 3,"");
 

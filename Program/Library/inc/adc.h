@@ -113,7 +113,7 @@ void ADC__SetIsObstacleFlag(void);
 void ADC__ResetIsObstacleFlag(void);
 uint8_t ADC__GetIsObstacleFlag(void);
 
-void ADC__Poll(void);
+void ADC__1msPoll(void);
 #ifdef __cplusplus
   }
 #endif

@@ -23,6 +23,7 @@
 #include "timer.h"
 #include "motors.h"
 #include "obstacle.h"
+#include "system.h"
 /****************************************************************************/
 /*                      DECLARATION AND DEFINITIONS                         */
 /****************************************************************************/
@@ -151,6 +152,7 @@ static void adc__Init(void)
         }
        }
 
+       SYSTEM__ClearSleepReadyFlag(SYSTEM__SLEEPREADY_MEAS_ADC);
        adc__data_s.vrefcalib_value = *VREFINT_CAL_ADDR;
        adc__data_s.isInitiated = 1;
 
@@ -215,6 +217,7 @@ void ADC__DeInit(void)
     /* For robust implementation, add here time-out management */
   }
 
+  SYSTEM__SetSleepReadyFlag(SYSTEM__SLEEPREADY_MEAS_ADC);
   adc__data_s.isInitiated = 0;
 }
 
@@ -378,147 +381,144 @@ uint8_t ADC__GetIsObstacleFlag(void)
 }
 
 
-void ADC__Poll(void)
+void ADC__1msPoll(void)
 {
   uint8_t i = 0;
   uint8_t counter = 0;
 
-  if(timer__data_u.time_adc_2ms_flag)
+  // deinicjalizacja jest po pomiarach
+  if(!adc__data_s.end_adc_measure && !adc__data_s.isInitiated)
   {
-    timer__data_u.time_adc_2ms_flag = 0;
+    ADC__MeasureAllAdc();
+  }
+  else
+  {
+    adc__data_s.end_adc_measure = 0;
+    // vref oraz temp zawsze musza byc na koncu, by ponizsze dzialalo
+    for(i = 0; i < NUMBER_OF_SHARP; i++)
+    {
 
-    // deinicjalizacja jest po pomiarach
-    if(!adc__data_s.end_adc_measure && !adc__data_s.isInitiated)
-    {
-      ADC__MeasureAllAdc();
-    }
-    else
-    {
-      adc__data_s.end_adc_measure = 0;
-      // vref oraz temp zawsze musza byc na koncu, by ponizsze dzialalo
-      for(i = 0; i < NUMBER_OF_SHARP; i++)
+      if(ADC_array[i] > 2300)
       {
-
-        if(ADC_array[i] > 2300)
+        if((timer__data_u.time_pwm_is_on || OBSTACLE__GetIdentificationTimer() == 1) &&
+            !OBSTACLE__GetAvoidObstacleIsrFlag())
         {
-          if((timer__data_u.time_pwm_is_on || OBSTACLE__GetIdentificationTimer() == 1) &&
-              !OBSTACLE__GetAvoidObstacleIsrFlag())
+          MOTORS__jazda_zatrzymana();
+          OBSTACLE__StartIdentificationTimer();
+          OBSTACLE__SetSharpId(i);
+
+          switch(i)
           {
-            MOTORS__jazda_zatrzymana();
-            OBSTACLE__StartIdentificationTimer();
-            OBSTACLE__SetSharpId(i);
 
-            switch(i)
+            case SHARP_PRZOD_SRODEK:
             {
-
-              case SHARP_PRZOD_SRODEK:
-              {
-                //TIMER__PWM_DC1_2_Change_Duty(40);
-                //MOTORS__jazda_do_tylu();
-                UART__SetSharp1ToSend();
-                //tutaj beda tylko flagi ustawiane i w innym pollingu bedzie wykonywane cofanie, omijanie
-                break;
-              }
-              case SHARP_PRZOD_LEWY:
-              {
-               // TIMER__PWM_DC1_2_Change_Duty(40);
-               //MOTORS__jazda_do_tylu();
-                UART__SetSharpLewyPrzodToSend();
-                break;
-              }
-              case SHARP_PRZOD_PRAWY:
-              {
-                //TIMER__PWM_DC1_2_Change_Duty(40);
-                //MOTORS__jazda_do_tylu();
-                UART__SetSharpPrawyPrzodToSend();
-
-                break;
-              }
-              case SHARP_TYL_SRODEK:
-              {
-                //TIMER__PWM_DC1_2_Change_Duty(40);
-               // MOTORS__jazda_do_przodu();
-                UART__SetSharpSrodekTylToSend();
-                break;
-              }
+              //TIMER__PWM_DC1_2_Change_Duty(40);
+              //MOTORS__jazda_do_tylu();
+              UART__SetSharp1ToSend();
+              //tutaj beda tylko flagi ustawiane i w innym pollingu bedzie wykonywane cofanie, omijanie
+              break;
             }
-          }
-          else if(OBSTACLE__GetAvoidObstacleIsrFlag())
-          {
-            switch(i)
+            case SHARP_PRZOD_LEWY:
             {
-              case SHARP_PRZOD_SRODEK:
-              case SHARP_PRZOD_LEWY:
-              case SHARP_PRZOD_PRAWY:
-              {
-                if(MOTORS__GetCurrentDirection() == JAZDA_DO_PRZODU)
-                {
-                  MOTORS__jazda_zatrzymana();
-                  OBSTACLE__ClearAvoidObstacleIsrFlag();
-                  OBSTACLE__StartIdentificationTimer();
-                  OBSTACLE__SetSharpId(i);
-                }
+             // TIMER__PWM_DC1_2_Change_Duty(40);
+             //MOTORS__jazda_do_tylu();
+              UART__SetSharpLewyPrzodToSend();
+              break;
+            }
+            case SHARP_PRZOD_PRAWY:
+            {
+              //TIMER__PWM_DC1_2_Change_Duty(40);
+              //MOTORS__jazda_do_tylu();
+              UART__SetSharpPrawyPrzodToSend();
 
-                break;
-              }
-              case SHARP_TYL_SRODEK:
-              {
-                if(MOTORS__GetCurrentDirection() == JAZDA_DO_TYLU)
-                {
-                  MOTORS__jazda_zatrzymana();
-                  OBSTACLE__ClearAvoidObstacleIsrFlag();
-                  OBSTACLE__StartIdentificationTimer();
-                  OBSTACLE__SetSharpId(i);
-                }
-                break;
-              }
+              break;
+            }
+            case SHARP_TYL_SRODEK:
+            {
+              //TIMER__PWM_DC1_2_Change_Duty(40);
+             // MOTORS__jazda_do_przodu();
+              UART__SetSharpSrodekTylToSend();
+              break;
             }
           }
         }
-        else if(ADC_array[i] > 2000)
+        else if(OBSTACLE__GetAvoidObstacleIsrFlag())
         {
-          //OBSTACLE__StopIdentificationTimer();
-          if(timer__data_u.time_pwm_last_value > 40)
+          switch(i)
           {
-            TIMER__PWM_DC1_2_Change_Duty(40);
-          }
+            case SHARP_PRZOD_SRODEK:
+            case SHARP_PRZOD_LEWY:
+            case SHARP_PRZOD_PRAWY:
+            {
+              if(MOTORS__GetCurrentDirection() == JAZDA_DO_PRZODU)
+              {
+                MOTORS__jazda_zatrzymana();
+                OBSTACLE__ClearAvoidObstacleIsrFlag();
+                OBSTACLE__StartIdentificationTimer();
+                OBSTACLE__SetSharpId(i);
+              }
 
-          adc__data_s.is_Obstacle = 1;
-        }
-        else if(ADC_array[i] > 1800)
-        {
-          //OBSTACLE__StopIdentificationTimer();
-          if(timer__data_u.time_pwm_last_value > 50)
-          {
-            TIMER__PWM_DC1_2_Change_Duty(50);
+              break;
+            }
+            case SHARP_TYL_SRODEK:
+            {
+              if(MOTORS__GetCurrentDirection() == JAZDA_DO_TYLU)
+              {
+                MOTORS__jazda_zatrzymana();
+                OBSTACLE__ClearAvoidObstacleIsrFlag();
+                OBSTACLE__StartIdentificationTimer();
+                OBSTACLE__SetSharpId(i);
+              }
+              break;
+            }
           }
-
-          adc__data_s.is_Obstacle = 1;
-        }
-
-        else if(ADC_array[i] > 1600)
-        {
-          //OBSTACLE__StopIdentificationTimer();
-          if(timer__data_u.time_pwm_last_value > 80)
-          {
-            TIMER__PWM_DC1_2_Change_Duty(70);
-          }
-          adc__data_s.is_Obstacle = 1;
-        }
-        else
-        {
-          //OBSTACLE__StopIdentificationTimer();
-          counter++;
         }
       }
-
-      if(counter >= NUMBER_OF_SHARP)
+      else if(ADC_array[i] > 2000)
       {
-        OBSTACLE__StopIdentificationTimer();
-        adc__data_s.is_Obstacle = 0;
+        //OBSTACLE__StopIdentificationTimer();
+        if(timer__data_u.time_pwm_last_value > 40)
+        {
+          TIMER__PWM_DC1_2_Change_Duty(40);
+        }
+
+        adc__data_s.is_Obstacle = 1;
       }
-      //counter kasowany automatyczznie bo zmienna lokalna
+      else if(ADC_array[i] > 1800)
+      {
+        //OBSTACLE__StopIdentificationTimer();
+        if(timer__data_u.time_pwm_last_value > 50)
+        {
+          TIMER__PWM_DC1_2_Change_Duty(50);
+        }
+
+        adc__data_s.is_Obstacle = 1;
+      }
+
+      else if(ADC_array[i] > 1600)
+      {
+        // stop and go in last direction, now inactive
+        //OBSTACLE__StopIdentificationTimer();
+        if(timer__data_u.time_pwm_last_value > 80)
+        {
+          TIMER__PWM_DC1_2_Change_Duty(70);
+        }
+        adc__data_s.is_Obstacle = 1;
+      }
+      else
+      {
+        // stop and go in last direction, now inactive
+        //OBSTACLE__StopIdentificationTimer();
+        counter++;
+      }
     }
+
+    if(counter >= NUMBER_OF_SHARP)
+    {
+      OBSTACLE__StopIdentificationTimer();
+      adc__data_s.is_Obstacle = 0;
+    }
+    //counter kasowany automatyczznie bo zmienna lokalna
   }
 }
 
