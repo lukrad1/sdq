@@ -63,6 +63,8 @@ volatile uint16_t error = 0;  //initialized at 0 and modified by the functions
 
 int main(void)
 {
+
+  //FLASH->ACR |= FLASH_ACR_PRE_READ;
   /*System_Init(); This function is enabled in startup stm32 file by default*/
   SystemClock_Config();
   /* Enable SYSCFG Clock - it's required to adc measure, uart and dma */

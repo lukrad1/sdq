@@ -102,7 +102,8 @@ static uint8_t rtc__DeInit(void)
   {
     timeout++;
     if(timeout > 20000)
-    {
+    { /* Exit Initialization mode */
+      RTC->ISR &= ((uint32_t)~RTC_ISR_INIT);
       return ERROR_RTC;
     }
     /* add time out here for a robust application */
@@ -155,6 +156,11 @@ uint8_t RTC__Init(void)
 {
   uint32_t timeout = 0;
 
+ /*if(rtc__DeInit() == ERROR_RTC)
+  {
+
+    return ERROR_RTC;
+  }*/
   /* Enable the peripheral clock RTC */
     /* (1) Enable the LSI */
     /* (2) Wait while it is not ready */
@@ -186,6 +192,18 @@ uint8_t RTC__Init(void)
    RTC->WPR = 0x53; /* (7) */
    /* Go to Init RTC mode = all counters stopped */
    RTC->ISR |= RTC_ISR_INIT;
+
+   while(RTC->ISR & RTC_ISR_INITF != RTC_ISR_INITF)
+   {
+     timeout++;
+     if(timeout > 20000)
+     {
+       /* Enable the write protection for RTC registers */
+       return ERROR_RTC;
+     }
+
+   }
+   timeout = 0;
    /* Clear RTC_CR FMT, OSEL and POL Bits */
    RTC->CR &= ((uint32_t)~(RTC_CR_FMT | RTC_CR_OSEL | RTC_CR_POL));
 
@@ -213,6 +231,18 @@ uint8_t RTC__Init(void)
     RTC->WPR = 0x53; /* (7) */
 
     RTC->ISR |= RTC_ISR_INIT;
+    while(RTC->ISR & RTC_ISR_INITF != RTC_ISR_INITF)
+    {
+      timeout++;
+      if(timeout > 20000)
+      {
+        /* Enable the write protection for RTC registers */
+        return ERROR_RTC;
+      }
+
+    }
+    timeout = 0;
+
     if((RTC->CR & RTC_CR_WUTE) != RESET)
     {
        /* Wait till RTC WUTWF flag is reset and if Time out is reached exit */
