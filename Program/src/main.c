@@ -72,10 +72,10 @@ int main(void)
   GPIO__Init();
   TIMER__InitClk();
   SysTick_Config(4000); /* 1ms config */
- // UART__DMAConfig();
- // UART__Init(UART__BAUDRATE_19200);
- // BUTTON__Init();
-//  GPIO__ConfigEnkoders(1);
+  UART__DMAConfig();
+  UART__Init(UART__BAUDRATE_19200);
+  BUTTON__Init();
+  GPIO__ConfigEnkoders(1);
   ADC__ResetIsObstacleFlag();
   MOTORS__jazda_zatrzymana();
   if(RTC__Init() == 0x01)
@@ -93,7 +93,7 @@ int main(void)
     SYSTEM__1msPoll();
     SYSTEM__30sPoll();
 
-  //  UART__Poll();
+    UART__Poll();
     SYSTEM__SleepPoll();
 
   }
@@ -288,6 +288,30 @@ void RTC_IRQHandler(void)
   else
   {
     NVIC_DisableIRQ(RTC_IRQn);/* Disable RTC_IRQn */
+  }
+}
+
+/**
+  * Brief   This function handles DMA1 channel 2 TC interrupt request.
+  * Param   None
+  * Retval  None
+  */
+void DMA1_Channel2_3_IRQHandler(void)
+{
+  if((DMA1->ISR & DMA_ISR_TCIF2) == DMA_ISR_TCIF2)
+  {
+    DMA1->IFCR |= DMA_IFCR_CTCIF2; /* Clear TC flag */
+
+    SPI_RASPB__RxInterrupt();
+
+    DMA1_Channel2->CCR &=~ DMA_CCR_EN;
+    DMA1_Channel2->CNDTR = sizeof(spi_raspb__stringtosend); /* Data size */
+    DMA1_Channel2->CCR |= DMA_CCR_EN;
+  }
+  else
+  {
+    //error = ERROR_SPI; /* Report an error */
+    NVIC_DisableIRQ(DMA1_Channel2_3_IRQn); /* Disable DMA1_Channel2_3_IRQn */
   }
 }
 #ifdef __cplusplus

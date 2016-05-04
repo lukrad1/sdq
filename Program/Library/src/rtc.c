@@ -271,13 +271,13 @@ uint8_t RTC__Init(void)
       }
     }
     timeout = 0;
-    RTC->WUTR = (0x9C0 + 0x2710); /* (10) */
+    RTC->WUTR = (uint32_t)80; /* (10) */ // ze wzgledu na brak kalibracji 60 sek = 48 realych
 
       /* Clear the Wakeup Timer clock source bits in CR register */
       RTC->CR &= (uint32_t)~RTC_CR_WUCKSEL;
 
       /* Configure the clock source */
-      RTC->CR |= (uint32_t)RTC_WAKEUPCLOCK_RTCCLK_DIV16;
+      RTC->CR |= (uint32_t)RTC_WAKEUPCLOCK_CK_SPRE_16BITS;
 
       /* RTC WakeUpTimer Interrupt Configuration: EXTI configuration */
       EXTI->IMR |= RTC_EXTI_LINE_WAKEUPTIMER_EVENT;
