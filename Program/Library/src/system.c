@@ -260,6 +260,9 @@ void SYSTEM__30sTick(void)
 
    if((SYSTEM__sleepFlags_u.flags & SYSTEM__SLEEPFLAG_MASK) == SYSTEM__SLEEPFLAG_MASK)
    {
+     ADC__DeInit();
+     UART__DeInit();
+     GPIOB->BSRR = (1<<5); //switch off led
      //be sure that an adc is turned off
      //ADC__DeInitOptimal();
      //turn off step-up converter

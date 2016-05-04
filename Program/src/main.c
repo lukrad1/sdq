@@ -29,6 +29,7 @@ extern "C"
 #include "motors.h"
 #include "obstacle.h"
 #include "button_engine.h"
+#include "rtc.h"
 /****************************************************************************/
 /*                      DECLARATION AND DEFINITIONS                         */
 /****************************************************************************/
@@ -62,7 +63,6 @@ volatile uint16_t error = 0;  //initialized at 0 and modified by the functions
 
 int main(void)
 {
-
   /*System_Init(); This function is enabled in startup stm32 file by default*/
   SystemClock_Config();
   /* Enable SYSCFG Clock - it's required to adc measure, uart and dma */
@@ -70,13 +70,16 @@ int main(void)
   GPIO__Init();
   TIMER__InitClk();
   SysTick_Config(4000); /* 1ms config */
-  UART__DMAConfig();
-  UART__Init(UART__BAUDRATE_19200);
-  BUTTON__Init();
-  GPIO__ConfigEnkoders(1);
+ // UART__DMAConfig();
+ // UART__Init(UART__BAUDRATE_19200);
+ // BUTTON__Init();
+//  GPIO__ConfigEnkoders(1);
   ADC__ResetIsObstacleFlag();
   MOTORS__jazda_zatrzymana();
-
+  if(RTC__Init() == 0x01)
+  {
+    GPIOA->ODR ^= (1 << 5);//toggle green led on PA5
+  }
   //Zezwolenie na przerwanie globalne
   //  __enable_irq(); // po resecie przerwania sa zalaczone z automatu
   /* Infinite loop */
@@ -88,7 +91,8 @@ int main(void)
     SYSTEM__1msPoll();
     SYSTEM__30sPoll();
 
-    UART__Poll();
+  //  UART__Poll();
+    SYSTEM__SleepPoll();
 
   }
 }
@@ -237,7 +241,7 @@ void ADC1_COMP_IRQHandler(void)
   {
     if ((ADC1->ISR & ADC_ISR_OVR) != 0)  /* Check OVR has triggered the IT */
     {
-      GPIOB->BSRR = (1<<5); /* Switch off green led to report it is due to overrun  */
+      GPIOA->BSRR = (1<<5); /* Switch off green led to report it is due to overrun  */
       ADC1->ISR |= ADC_ISR_EOC | ADC_ISR_EOSEQ | ADC_ISR_OVR; /* Clear all pending flags */
       ADC1->CR |= ADC_CR_ADSTP; /* Stop the sequence conversion */
       /* the data in the DR is considered as not valid */
@@ -258,6 +262,30 @@ void ADC1_COMP_IRQHandler(void)
         ADC__DeInit();
       }
     }
+  }
+}
+
+/**
+* @brief This function handles RTC global interrupt through EXTI lines 17, 19 and 20 and LSE CSS interrupt through EXTI line 19.
+*/
+/**
+  * Brief   This function handles RTC interrupt request.
+  * Param   None
+  * Retval  None
+  */
+void RTC_IRQHandler(void)
+{
+  /* Check WUT flag */
+  if((RTC->ISR & (RTC_ISR_WUTF)) == (RTC_ISR_WUTF))
+  {
+    RTC->ISR &=~ RTC_ISR_WUTF; /* Reset Wake up flag */
+    EXTI->PR |= EXTI_PR_PR20; /* clear exti line 20 flag */
+    GPIOA->ODR ^= (1 << 5) ; /* Toggle Green LED */
+
+  }
+  else
+  {
+    NVIC_DisableIRQ(RTC_IRQn);/* Disable RTC_IRQn */
   }
 }
 #ifdef __cplusplus
