@@ -43,7 +43,7 @@ static volatile union spi_raspb__status_u
     uint8_t txBusyFlag: 1;
     uint8_t rxBusyFlag: 1;
     uint8_t receivedData: 1;
-    uint8_t flag3: 1;
+    uint8_t sendDefaultMes: 1;
     uint8_t flag4: 1;
     uint8_t fullTransmision: 1;
     uint8_t flag6: 1;
@@ -71,9 +71,53 @@ volatile uint8_t spi_raspb__RxBuffer[10];
 /* Functions definitions (1. Static functions 2. Local exported functions */
 /* 3. Interface (exported) functions) */
 
+static void spi_RASPB__DMAConfig(void)
+{
+  /* Enable the peripheral clock DMA11 */
+   RCC->AHBENR |= RCC_AHBENR_DMA1EN;
+
+   /* DMA1 Channel2 SPI1_RX config */
+   /* (1)  Map SPI1_RX DMA channel */
+   /* (2) Peripheral address */
+   /* (3) Memory address */
+   /* (4) Data size */
+   /* (5) Memory increment */
+   /*     Peripheral to memory */
+   /*     8-bit transfer */
+   /*     Transfer complete IT */
+   DMA1_CSELR->CSELR = (DMA1_CSELR->CSELR & ~DMA_CSELR_C2S) | (1 << (1 * 4)); /* (1) */
+   DMA1_Channel2->CPAR = (uint32_t)&(SPI1->DR); /* (2) */
+   //spi_raspb__stringtoreceive = malloc(sizeof(spi_raspb__stringtosend));
+   DMA1_Channel2->CMAR = (uint32_t)spi_raspb__stringtoreceive; /* (3) */
+   DMA1_Channel2->CNDTR = 1; /* (4) */
+   DMA1_Channel2->CCR |= DMA_CCR_MINC | DMA_CCR_TCIE  | DMA_CCR_EN; /* (5) */
+
+   /* DMA1 Channel3 SPI1_TX config */
+   /* (6)  Map SPI1_TX DMA channel */
+   /* (7) Peripheral address */
+   /* (8) Memory address */
+   /* (9) Memory increment */
+   /*     Memory to peripheral*/
+   /*     8-bit transfer */
+   DMA1_CSELR->CSELR = (DMA1_CSELR->CSELR & ~DMA_CSELR_C3S) | (1 << (2 * 4)); /* (6) */
+   DMA1_Channel3->CPAR = (uint32_t)&(SPI1->DR); /* (7) */
+   DMA1_Channel3->CMAR = (uint32_t)spi_raspb__stringtosend; /* (8) */
+   DMA1_Channel3->CCR |= DMA_CCR_MINC | DMA_CCR_DIR; /* (9) */
+
+   /* Configure IT */
+   /* (10) Set priority for DMA1_Channel2_3_IRQn */
+   /* (11) Enable DMA1_Channel2_3_IRQn */
+   NVIC_SetPriority(DMA1_Channel2_3_IRQn, 1); /* (10) */
+   NVIC_EnableIRQ(DMA1_Channel2_3_IRQn); /* (11) */
+
+}
+
+/******************************* END FUNCTION *********************************/
+
 void SPI_RASPB__Init(uint32_t baudrate)
 {
-  GPIO__ConfigSPI_RASPB();
+  GPIO__ConfigSPI_RASPB(1);
+  spi_RASPB__DMAConfig();
   /* Enable the peripheral clock SPI1 */
    RCC->APB2ENR |= RCC_APB2ENR_SPI1EN;
 
@@ -95,49 +139,7 @@ void SPI_RASPB__DeInit(void)
 
 }
 
-
 /******************************* END FUNCTION *********************************/
-
-void SPI_RASPB__DMAConfig(void)
-{
-  /* Enable the peripheral clock DMA11 */
-   RCC->AHBENR |= RCC_AHBENR_DMA1EN;
-
-   /* DMA1 Channel2 SPI1_RX config */
-   /* (1)  Map SPI1_RX DMA channel */
-   /* (2) Peripheral address */
-   /* (3) Memory address */
-   /* (4) Data size */
-   /* (5) Memory increment */
-   /*     Peripheral to memory */
-   /*     8-bit transfer */
-   /*     Transfer complete IT */
-   DMA1_CSELR->CSELR = (DMA1_CSELR->CSELR & ~DMA_CSELR_C2S) | (1 << (1 * 4)); /* (1) */
-   DMA1_Channel2->CPAR = (uint32_t)&(SPI1->DR); /* (2) */
-   spi_raspb__stringtoreceive = malloc(sizeof(spi_raspb__stringtosend));
-   DMA1_Channel2->CMAR = (uint32_t)spi_raspb__stringtoreceive; /* (3) */
-   DMA1_Channel2->CNDTR = sizeof(spi_raspb__stringtosend); /* (4) */
-   DMA1_Channel2->CCR |= DMA_CCR_MINC | DMA_CCR_TCIE  | DMA_CCR_EN; /* (5) */
-
-   /* DMA1 Channel3 SPI1_TX config */
-   /* (6)  Map SPI1_TX DMA channel */
-   /* (7) Peripheral address */
-   /* (8) Memory address */
-   /* (9) Memory increment */
-   /*     Memory to peripheral*/
-   /*     8-bit transfer */
-   DMA1_CSELR->CSELR = (DMA1_CSELR->CSELR & ~DMA_CSELR_C3S) | (1 << (2 * 4)); /* (6) */
-   DMA1_Channel3->CPAR = (uint32_t)&(SPI1->DR); /* (7) */
-   DMA1_Channel3->CMAR = (uint32_t)spi_raspb__stringtosend; /* (8) */
-   DMA1_Channel3->CCR |= DMA_CCR_MINC | DMA_CCR_DIR; /* (9) */
-
-   /* Configure IT */
-   /* (10) Set priority for DMA1_Channel2_3_IRQn */
-   /* (11) Enable DMA1_Channel2_3_IRQn */
-   NVIC_SetPriority(DMA1_Channel2_3_IRQn, 0); /* (10) */
-   NVIC_EnableIRQ(DMA1_Channel2_3_IRQn); /* (11) */
-
-}
 
 void SPI_RASPB__StartDmaTransmision(int8_t* data, int8_t* additional_text,
                                uint8_t length, int8_t* message)
@@ -155,6 +157,7 @@ void SPI_RASPB__StartDmaTransmision(int8_t* data, int8_t* additional_text,
   for(i = 2; i < (length - 2); i++)
   {
     spi_raspb__stringtosend[i] = data[i-2];
+    // jezeli mamy koniec wiadomosci (znak null)
     if(data[i-2] == 0)
     {
       for(j = i; j < (length - 2); j++)
@@ -171,13 +174,10 @@ void SPI_RASPB__StartDmaTransmision(int8_t* data, int8_t* additional_text,
       i = 21;
     }
   }
-  spi_raspb__stringtosend[length-2] = 10;
-  spi_raspb__stringtosend[length-1] = 12;
+  spi_raspb__stringtosend[length-2] = 13;
+  spi_raspb__stringtosend[length-1] = 10;
   /* start 8-bit transmission with DMA*/
-  /* Prepare Slave */
-  DMA1_Channel5->CCR &=~ DMA_CCR_EN;
-  DMA1_Channel5->CNDTR = sizeof(spi_raspb__stringtosend); /* Data size */
-  DMA1_Channel5->CCR |= DMA_CCR_EN;
+
   /* Prepare master */
   DMA1_Channel3->CCR &=~ DMA_CCR_EN;
   DMA1_Channel3->CNDTR = sizeof(spi_raspb__stringtosend); /* Data size */
@@ -206,11 +206,18 @@ void SPI_RASPB__RxInterrupt(void)
         index = 4; // koniec transmisji i blokada, czekanie na bit startu
         SYSTEM__ClearSleepReadyFlag(SYSTEM__SLEEPREADY_UART);
         spi_raspb__status_u.receivedData = 1;
+
+        //tymczasowo tutaj bo to co wysle i odbiore dzieje sie w tym samym czasie
+        SPI_RASPB__TxInterrupt();
       }
 
       index++;
     }
   }
+
+  DMA1_Channel2->CCR &=~ DMA_CCR_EN;
+  DMA1_Channel2->CNDTR = 1; /* Data size */
+  DMA1_Channel2->CCR |= DMA_CCR_EN;
 }
 
 void SPI_RASPB__TxInterrupt(void)
@@ -267,7 +274,14 @@ void SPI_RASPB__Poll(void)
 
   if(!spi_raspb__status_u.txBusyFlag)
   {
-
+    if(spi_raspb__status_u.sendDefaultMes)
+    {
+      spi_raspb__status_u.sendDefaultMes = 0;
+      sprintf(data, "%d", (int)49);
+      SPI_RASPB__StartDmaTransmision("1", "1",1,"1");
+      // zablokowac tx i sprawdzic flage od konca nadawania
+      spi_raspb__status_u.txBusyFlag = 0;
+    }
   }
   else
   {
@@ -276,6 +290,12 @@ void SPI_RASPB__Poll(void)
 
 }
 
+/******************************* END FUNCTION *********************************/
+
+void SPI_Raspb__SetDefaultMessToSend(void)
+{
+  spi_raspb__status_u.sendDefaultMes = 1;
+}
 
 /******************************* END FUNCTION *********************************/
 

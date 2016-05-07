@@ -26,6 +26,8 @@
 #include "adc.h"
 #include "button_engine.h"
 #include "led.h"
+#include "spi_raspb.h"
+
 /****************************************************************************/
 /*                      DECLARATION AND DEFINITIONS                         */
 /****************************************************************************/
@@ -152,7 +154,8 @@ void SYSTEM__30sPoll(void)
   {
     system__30sFlag = 0;
 
-    UART__SetIntTempToSend();
+    //UART__SetIntTempToSend();
+    SPI_Raspb__SetDefaultMessToSend();
   }
 }
 

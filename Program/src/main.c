@@ -30,6 +30,8 @@ extern "C"
 #include "obstacle.h"
 #include "button_engine.h"
 #include "rtc.h"
+#include "spi_raspb.h"
+
 /****************************************************************************/
 /*                      DECLARATION AND DEFINITIONS                         */
 /****************************************************************************/
@@ -74,6 +76,7 @@ int main(void)
   SysTick_Config(4000); /* 1ms config */
   UART__DMAConfig();
   UART__Init(UART__BAUDRATE_19200);
+  SPI_RASPB__Init(0);
   BUTTON__Init();
   GPIO__ConfigEnkoders(1);
   ADC__ResetIsObstacleFlag();
@@ -94,6 +97,7 @@ int main(void)
     SYSTEM__30sPoll();
 
     UART__Poll();
+    SPI_RASPB__Poll();
     SYSTEM__SleepPoll();
 
   }
@@ -283,7 +287,7 @@ void RTC_IRQHandler(void)
     RTC->ISR &=~ RTC_ISR_WUTF; /* Reset Wake up flag */
     EXTI->PR |= EXTI_PR_PR20; /* clear exti line 20 flag */
     GPIOA->ODR ^= (1 << 5) ; /* Toggle Green LED */
-
+    SYSTEM__30sTick();
   }
   else
   {
@@ -303,10 +307,6 @@ void DMA1_Channel2_3_IRQHandler(void)
     DMA1->IFCR |= DMA_IFCR_CTCIF2; /* Clear TC flag */
 
     SPI_RASPB__RxInterrupt();
-
-    DMA1_Channel2->CCR &=~ DMA_CCR_EN;
-    DMA1_Channel2->CNDTR = sizeof(spi_raspb__stringtosend); /* Data size */
-    DMA1_Channel2->CCR |= DMA_CCR_EN;
   }
   else
   {

@@ -69,7 +69,12 @@
 
 
 void SPI_RASPB__Init(uint32_t baudrate);
-
+void SPI_Raspb__SetDefaultMessToSend(void);
+void SPI_RASPB__Poll(void);
+void SPI_RASPB__TxInterrupt(void);
+void SPI_RASPB__RxInterrupt(void);
+void SPI_RASPB__StartDmaTransmision(int8_t* data, int8_t* additional_text,
+                               uint8_t length, int8_t* message);
 
 
 #ifdef __cplusplus

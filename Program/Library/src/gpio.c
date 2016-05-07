@@ -108,21 +108,15 @@ void GPIO__ConfigSPI_RASPB(uint8_t state)
      /* (3) Select AF mode (10) on PB3 */
      /* (4) AF0 for SPI1 signals */
      GPIOA->MODER = (GPIOA->MODER
-                     & ~(GPIO_MODER_MODE4 | \
-                         GPIO_MODER_MODE6 | GPIO_MODER_MODE7))\
-                     | (GPIO_MODER_MODE4_1 | \
-                        GPIO_MODER_MODE6_1 | GPIO_MODER_MODE7_1); /* (1) */
+                     & ~(GPIO_MODER_MODE6 | GPIO_MODER_MODE7))\
+                     | (GPIO_MODER_MODE6_1 | GPIO_MODER_MODE7_1); /* (1) */
      GPIOA->AFR[0] = (GPIOA->AFR[0] & \
-                      ~((0xF<<(4*4)) | \
-                        (0xF<<(4*6)) | ((uint32_t)0xF<<(4*7)))); /* (2) */
+                      ~((0xF<<(4*6)) | ((uint32_t)0xF<<(4*7)))); /* (2) */
       GPIOB->MODER = (GPIOB->MODER & ~(GPIO_MODER_MODE3)) | GPIO_MODER_MODE3_1; /* (3) */
       GPIOB->AFR[0] = (GPIOB->AFR[0] & ~((0xF<<(4*3)))); /* (4) */
   }
-  else
-  {
 
-
-  }
+}
 /******************************* END FUNCTION *********************************/
 
 void GPIO__ConfigLedR(uint8_t state)

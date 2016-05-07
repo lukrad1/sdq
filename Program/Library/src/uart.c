@@ -188,7 +188,7 @@ void UART__StartDmaTransmision(int8_t* data, int8_t* additional_text,
     }
   }
   stringtosend[length-2] = 10;
-  stringtosend[length-1] = 12;
+  stringtosend[length-1] = 12; // czy tu nie powinno byc 13????
   /* start 8-bit transmission with DMA */
   DMA1_Channel4->CCR &=~ DMA_CCR_EN;
   DMA1_Channel4->CNDTR = length-1;/* Data size */

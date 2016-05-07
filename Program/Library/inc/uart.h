@@ -74,7 +74,7 @@
 * @param baudrate - uart transmision speed for example 9600, 115200 kbps.
 */
 void UART__Init(uint32_t baudrate);	
-
+void UART__DeInit(void);
 void UART__Start(void);														
 void UART__Stop(void);														
 // Funkcje odbioru i wysylania danych
