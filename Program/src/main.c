@@ -26,11 +26,13 @@ extern "C"
 #include "gpio.h"
 #include "adc.h"
 #include "uart.h"
+#include "uart_esp.h"
+#include "uart_raspb.h"
 #include "motors.h"
 #include "obstacle.h"
 #include "button_engine.h"
 #include "rtc.h"
-#include "spi_raspb.h"
+//#include "spi_raspb.h"
 
 /****************************************************************************/
 /*                      DECLARATION AND DEFINITIONS                         */
@@ -74,9 +76,17 @@ int main(void)
   GPIO__Init();
   TIMER__InitClk();
   SysTick_Config(4000); /* 1ms config */
+#ifdef ESP_8266
+  UART_ESP__DMAConfig();
+   UART_ESP__Init(UART_ESP__BAUDRATE_9600);
+#elif defined BLUETOOTH
   UART__DMAConfig();
   UART__Init(UART__BAUDRATE_19200);
-  SPI_RASPB__Init(0);
+#endif
+  UART_RASPB__DMAConfig();
+  UART_RASPB__Init(UART_RASPB__BAUDRATE_9600);
+  //Spalone sck w raspberry - nie implementuje
+ // SPI_RASPB__Init(0);
   BUTTON__Init();
   GPIO__ConfigEnkoders(1);
   ADC__ResetIsObstacleFlag();
@@ -88,7 +98,7 @@ int main(void)
   //Zezwolenie na przerwanie globalne
   //  __enable_irq(); // po resecie przerwania sa zalaczone z automatu
   /* Infinite loop */
-
+  // Enkoders as low state
   GPIOC->BSRR = (1<<11);
   while(1)
   {
@@ -96,8 +106,16 @@ int main(void)
     SYSTEM__1msPoll();
     SYSTEM__30sPoll();
 
+    // direct Wi-Fi communication (esp8266)
+#ifdef ESP_8266
+    UART_ESP__Poll();
+#elif defined BLUETOOTH
     UART__Poll();
-    SPI_RASPB__Poll();
+#endif
+
+    // communication with raspberry pi
+    UART_RASPB__Poll();
+    //SPI_RASPB__Poll();
     SYSTEM__SleepPoll();
 
   }
@@ -191,7 +209,10 @@ void EXTI4_15_IRQHandler(void)
     EXTI->PR |= EXTI_PR_PR13;
     BUTTON__SetExtiButtonFlag();
     GPIOA->ODR ^= (1 << 5);//toggle green led on PA5
+#ifdef BLUETOOTH
     UART__StartDmaTransmision(data,"", 3,"");
+#endif
+
 
   }
 }
@@ -207,7 +228,13 @@ void DMA1_Channel4_5_6_7_IRQHandler(void)
   if((DMA1->ISR & DMA_ISR_TCIF4) == DMA_ISR_TCIF4)
   {
     DMA1->IFCR = DMA_IFCR_CTCIF4;/* Clear TC flag */
+
+#ifdef ESP_8266
+    UART_ESP__TxInterrupt();
+#elif defined BLUETOOTH
     UART__TxInterrupt();
+#endif
+
   }
 
   // if receive data is finished, then check data, clear flags and start wait for
@@ -215,10 +242,19 @@ void DMA1_Channel4_5_6_7_IRQHandler(void)
   else if((DMA1->ISR & DMA_ISR_TCIF5) == DMA_ISR_TCIF5)
   {
     DMA1->IFCR = DMA_IFCR_CTCIF5;/* Clear TC flag */
+
+
+#ifdef ESP_8266
+    UART_ESP__RxInterrupt();
+    DMA1_Channel5->CCR &= ~ DMA_CCR_EN;
+    DMA1_Channel5->CNDTR = sizeof(stringtoreceive_esp);/* Data size */
+    DMA1_Channel5->CCR |= DMA_CCR_EN;
+#elif defined BLUETOOTH
     UART__RxInterrupt();
     DMA1_Channel5->CCR &= ~ DMA_CCR_EN;
     DMA1_Channel5->CNDTR = sizeof(stringtoreceive);/* Data size */
     DMA1_Channel5->CCR |= DMA_CCR_EN;
+#endif
   }
   else
   {
@@ -302,11 +338,24 @@ void RTC_IRQHandler(void)
   */
 void DMA1_Channel2_3_IRQHandler(void)
 {
+  // If tx transmission is finished, then clear dma flag and tx busy flag
+  // or if SPI transmision is active
   if((DMA1->ISR & DMA_ISR_TCIF2) == DMA_ISR_TCIF2)
   {
     DMA1->IFCR |= DMA_IFCR_CTCIF2; /* Clear TC flag */
+    UART_RASPB__TxInterrupt();
+    //SPI_RASPB__RxInterrupt();
+  }
+  // if receive data is finished, then check data, clear flags and start wait for
+  // recieve state again
+  else if((DMA1->ISR & DMA_ISR_TCIF3) == DMA_ISR_TCIF3)
+  {
+   DMA1->IFCR = DMA_IFCR_CTCIF3;/* Clear TC flag */
 
-    SPI_RASPB__RxInterrupt();
+   UART_RASPB__RxInterrupt();
+   DMA1_Channel3->CCR &=~ DMA_CCR_EN;
+   DMA1_Channel3->CNDTR = sizeof(stringtoreceive);/* Data size */
+   DMA1_Channel3->CCR |= DMA_CCR_EN;
   }
   else
   {

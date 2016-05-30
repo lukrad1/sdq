@@ -124,9 +124,14 @@ void SPI_RASPB__Init(uint32_t baudrate)
    /* Configure SPI1 in master */
    /* (1) Master selection, BR: Fpclk/256 (due to C13 on the board, SPI_CLK is set to the minimum)
           CPOL and CPHA at zero (rising first edge), 8-bit data frame */
+
+   /* Configure SPI1 in slave */
    /* (2) Slave select output enabled, DMA in reception and transmission */
    /* (3) Enable SPI1 */
-   SPI1->CR1 = SPI_CR1_MSTR | SPI_CR1_BR; /* (1) */
+  // SPI1->CR1 = SPI_CR1_MSTR | SPI_CR1_BR; /* (1) */
+   SPI1->CR1 = SPI_CR1_SSI | SPI_CR1_SSM; // SSM: Software slave management
+   //When the SSM bit is set, the NSS pin input is replaced with the value from the SSI bit. SSI: Internal slave select
+
    SPI1->CR2 = SPI_CR2_TXDMAEN | SPI_CR2_RXDMAEN | SPI_CR2_SSOE; /* (2) */
    SPI1->CR1 |= SPI_CR1_SPE; /* (3) */
 }

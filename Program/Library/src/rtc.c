@@ -193,7 +193,7 @@ uint8_t RTC__Init(void)
    /* Go to Init RTC mode = all counters stopped */
    RTC->ISR |= RTC_ISR_INIT;
 
-   while(RTC->ISR & RTC_ISR_INITF != RTC_ISR_INITF)
+   while((RTC->ISR & RTC_ISR_INITF) != RTC_ISR_INITF)
    {
      timeout++;
      if(timeout > 20000)
@@ -231,7 +231,7 @@ uint8_t RTC__Init(void)
     RTC->WPR = 0x53; /* (7) */
 
     RTC->ISR |= RTC_ISR_INIT;
-    while(RTC->ISR & RTC_ISR_INITF != RTC_ISR_INITF)
+    while((RTC->ISR & RTC_ISR_INITF) != RTC_ISR_INITF)
     {
       timeout++;
       if(timeout > 20000)

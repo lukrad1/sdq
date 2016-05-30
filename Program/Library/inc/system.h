@@ -46,18 +46,19 @@ typedef enum system__sleepready_enum
     SYSTEM__SLEEPREADY_MEAS_ADC = 0,
     SYSTEM__SLEEPREADY_UART,
     SYSTEM__SLEEPREADY_SPI,
+    SYSTEM__SLEEPREADY_UART_RASPB,
     SYSTEM__SLEEPREADY_BUTTON,
     SYSTEM__SLEEPREADY_LED_BLINK,
     SYSTEM__SLEEPREADY_ROBOT_RUN,
 
     // clear all autoclear flags
-    SYSTEM__SLEEPREADY_ALL_BEFORE_SLEEP = 0xEF, // other means: it is #define ...
+    SYSTEM__SLEEPREADY_ALL_BEFORE_SLEEP = 0x6F, // other means: it is #define ...
     // clear all flags
     SYSTEM__SLEEPREADY_ALL = 0xFF               // other means: it is #define ...
   } SYSTEM__sleep_e;
 
 //this define masks unused sleep flags
-#define SYSTEM__SLEEPFLAG_NUMBER 6
+#define SYSTEM__SLEEPFLAG_NUMBER 7
 // which flag are used
 #define SYSTEM__SLEEPFLAG_MASK (uint8_t)0xFF
 // which flag can be autoclear after wakeup
@@ -72,10 +73,10 @@ typedef enum system__sleepready_enum
       uint8_t measure_adc: 1;
       uint8_t uart: 1;
       uint8_t spi: 1;
+      uint8_t uart_raspb:1;
       uint8_t button: 1;
       uint8_t led_blink: 1;
       uint8_t robot_run: 1;
-      uint8_t flag6: 1;
       uint8_t flag7 : 1;
 
     };

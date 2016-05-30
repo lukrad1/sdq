@@ -414,7 +414,9 @@ void ADC__1msPoll(void)
             {
               //TIMER__PWM_DC1_2_Change_Duty(40);
               //MOTORS__jazda_do_tylu();
+#ifdef  BLUETOOTH
               UART__SetSharp1ToSend();
+#endif
               //tutaj beda tylko flagi ustawiane i w innym pollingu bedzie wykonywane cofanie, omijanie
               break;
             }
@@ -422,22 +424,30 @@ void ADC__1msPoll(void)
             {
              // TIMER__PWM_DC1_2_Change_Duty(40);
              //MOTORS__jazda_do_tylu();
+#ifdef  BLUETOOTH
               UART__SetSharpLewyPrzodToSend();
+#endif
+
               break;
             }
             case SHARP_PRZOD_PRAWY:
             {
               //TIMER__PWM_DC1_2_Change_Duty(40);
               //MOTORS__jazda_do_tylu();
-              UART__SetSharpPrawyPrzodToSend();
 
+#ifdef  BLUETOOTH
+              UART__SetSharpPrawyPrzodToSend();
+#endif
               break;
             }
             case SHARP_TYL_SRODEK:
             {
               //TIMER__PWM_DC1_2_Change_Duty(40);
              // MOTORS__jazda_do_przodu();
+
+#ifdef  BLUETOOTH
               UART__SetSharpSrodekTylToSend();
+#endif
               break;
             }
           }

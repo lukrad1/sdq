@@ -211,6 +211,9 @@ void GPIO__ConfigButton(uint8_t state);
 void GPIO__ConfigEnkoders(uint8_t state);
 
 void GPIO__ConfigSPI_RASPB(uint8_t state);
+
+void GPIO__ConfigUART_RASPB(uint8_t state);
+
 #ifdef __cplusplus
   }
 #endif

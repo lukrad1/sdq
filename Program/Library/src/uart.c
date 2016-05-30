@@ -37,7 +37,7 @@ extern "C"
 /* UART status union. In this union are uart flags for example transmision flag */
 static volatile union uart__status_u
 {
-  uint8_t status; /* status variable, which is used to clear all uart status flag */
+  uint16_t status; /* status variable, which is used to clear all uart status flag */
   struct
   {
     uint8_t txBusyFlag: 1;
@@ -50,10 +50,12 @@ static volatile union uart__status_u
     uint8_t sendSharpTylSrodek : 1;
     uint8_t sendVrefValue:1;
     uint8_t sendPWMValue:1;
-    uint8_t flag5: 1;
+    uint8_t flag10: 1;
     uint8_t fullTransmision: 1;
-    uint8_t flag7: 1;
+    uint8_t flag12: 1;
     uint8_t Pwm_value;
+    uint8_t flag14: 1;
+    uint8_t flag15: 1;
   };
 }
 uart__status_u = {0}; /* Uart__status_u union declaraction. The variable name

@@ -84,16 +84,37 @@ void GPIO__ConfigUART(uint8_t state)
 	}
 	else
 	{
-     /* Disable the peripheral clock of GPIOA */
-     //->IOPENR &= ~RCC_IOPENR_GPIOAEN;
-     /*Select output mode (01) on GPIOA pin 5 */
-     GPIOA->MODER = (GPIOA->MODER & ~(GPIO_MODER_MODE5))
-              | (GPIO_MODER_MODE5_0); /* (2) */
-     //GPIOA->BSRR = (1 << 5); //set red led on PA5
-     GPIOA->BRR = (1 << 2) | (1 << 3); //output
+
 
 	}
 }
+
+/******************************* END FUNCTION *********************************/
+
+void GPIO__ConfigUART_RASPB(uint8_t state)
+{
+  if(state)
+  {
+
+       /* Enable the peripheral clock of GPIOA */
+       RCC->IOPENR |= RCC_IOPENR_GPIOAEN;
+
+       /* GPIO configuration for USART1 signals */
+       /* (1) Select AF mode (10) on PA9 and PA10 */
+       /* (2) AF4 for USART1 signals */
+       GPIOA->MODER = (GPIOA->MODER & ~(GPIO_MODER_MODE9|GPIO_MODER_MODE10))\
+                      | (GPIO_MODER_MODE9_1 | GPIO_MODER_MODE10_1); /* (1) */
+       GPIOA->AFR[1] = (GPIOA->AFR[1] &~ (0x00000FF0))\
+                       | (4 << (1 * 4)) | (4 << (2 * 4)); /* (2) */
+  }
+  else
+  {
+
+
+  }
+}
+
+/******************************* END FUNCTION *********************************/
 
 void GPIO__ConfigSPI_RASPB(uint8_t state)
 {
