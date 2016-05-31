@@ -84,8 +84,9 @@ void UART_ESP__TxInterrupt(void);
 // Pozostale funkcje
 void UART_ESP__DMAConfig(void);
 void UART_ESP__StartDmaTransmision(int8_t* data, int8_t* additional_text,
-                               uint8_t length, int8_t* message);
+                               uint8_t length);
 void UART_ESP__SetIntTempToSend(void);
+void UART_ESP__SendAllData(void);
 
 #ifdef __cplusplus
   }

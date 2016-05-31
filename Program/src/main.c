@@ -209,10 +209,11 @@ void EXTI4_15_IRQHandler(void)
     EXTI->PR |= EXTI_PR_PR13;
     BUTTON__SetExtiButtonFlag();
     GPIOA->ODR ^= (1 << 5);//toggle green led on PA5
-#ifdef BLUETOOTH
+#ifdef ESP_8266
+    UART_ESP__SendAllData();
+#elif defined BLUETOOTH
     UART__StartDmaTransmision(data,"", 3,"");
 #endif
-
 
   }
 }
