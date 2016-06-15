@@ -26,8 +26,14 @@ extern "C"
 #include "gpio.h"
 #include "adc.h"
 #include "uart.h"
+#include "uart_esp.h"
+#include "uart_raspb.h"
 #include "motors.h"
 #include "obstacle.h"
+#include "button_engine.h"
+#include "rtc.h"
+//#include "spi_raspb.h"
+
 /****************************************************************************/
 /*                      DECLARATION AND DEFINITIONS                         */
 /****************************************************************************/
@@ -43,7 +49,6 @@ extern "C"
 /* Global variable declaration */
 /* for example: extern unsigned int module_variable_1; */
 
-uint16_t counter = 0;
 volatile uint16_t error = 0;  //initialized at 0 and modified by the functions
 /****************************************************************************/
 /*                  FUNCTIONS DECLARATIONS AND DEFINITIONS                  */
@@ -63,6 +68,7 @@ volatile uint16_t error = 0;  //initialized at 0 and modified by the functions
 int main(void)
 {
 
+  //FLASH->ACR |= FLASH_ACR_PRE_READ;
   /*System_Init(); This function is enabled in startup stm32 file by default*/
   SystemClock_Config();
   /* Enable SYSCFG Clock - it's required to adc measure, uart and dma */
@@ -70,44 +76,48 @@ int main(void)
   GPIO__Init();
   TIMER__InitClk();
   SysTick_Config(4000); /* 1ms config */
-  GPIO__ConfigUART(1);
+#ifdef ESP_8266
+  UART_ESP__DMAConfig();
+   UART_ESP__Init(UART_ESP__BAUDRATE_9600);
+#elif defined BLUETOOTH
   UART__DMAConfig();
   UART__Init(UART__BAUDRATE_19200);
-  GPIO__ConfigButton(1);
+#endif
+  UART_RASPB__DMAConfig();
+  UART_RASPB__Init(UART_RASPB__BAUDRATE_9600);
+  //Spalone sck w raspberry - nie implementuje
+ // SPI_RASPB__Init(0);
+  BUTTON__Init();
   GPIO__ConfigEnkoders(1);
   ADC__ResetIsObstacleFlag();
   MOTORS__jazda_zatrzymana();
+  if(RTC__Init() == 0x01)
+  {
+    GPIOA->ODR ^= (1 << 5);//toggle green led on PA5
+  }
   //Zezwolenie na przerwanie globalne
   //  __enable_irq(); // po resecie przerwania sa zalaczone z automatu
   /* Infinite loop */
-
+  // Enkoders as low state
   GPIOC->BSRR = (1<<11);
   while(1)
   {
 
-    if(timer__data_u.time_1ms_flag)
-    {
-      timer__data_u.time_1ms_flag = 0;
+    SYSTEM__1msPoll();
+    SYSTEM__30sPoll();
 
-      OBSTACLE__1msPoll();
-      counter++;
-    }
-
-    if(counter >= 3000)
-    {
-
-//      UART__SetSharp1ToSend();
-//      UART__SetVrefToSend();
-      UART__SetIntTempToSend();
-//      UART__SetSharpLewyPrzodToSend();
-//      UART__SetSharpPrawyPrzodToSend();
-//      UART__SetSharpSrodekTylToSend();
-
-      counter = 0;
-    }
-
+    // direct Wi-Fi communication (esp8266)
+#ifdef ESP_8266
+    UART_ESP__Poll();
+#elif defined BLUETOOTH
     UART__Poll();
-    ADC__Poll();
+#endif
+
+    // communication with raspberry pi
+    UART_RASPB__Poll();
+    //SPI_RASPB__Poll();
+    SYSTEM__SleepPoll();
+
   }
 }
 
@@ -164,16 +174,8 @@ void PendSV_Handler(void)
  */
 void SysTick_Handler(void)
 {
-  static uint8_t count_timer = 0;
-  timer__data_u.time_1ms_flag = 1;
-
+  SYSTEM__1msTick();
   //GPIOC->ODR ^= (1 << 11);//toggle enkoders pin on PC11
-  count_timer++;
-  if(count_timer >= 2)
-  {
-    count_timer = 0;
-    timer__data_u.time_adc_2ms_flag = 1;
-  }
 }
 
 /******************************************************************************/
@@ -198,8 +200,6 @@ void EXTI4_15_IRQHandler(void)
     EXTI->PR |= EXTI_PR_PR10;
 
     OBSTACLE__EnkoderInterrupt();
-
-
   }
 
   if((EXTI->PR & EXTI_PR_PR13) == EXTI_PR_PR13)
@@ -207,10 +207,13 @@ void EXTI4_15_IRQHandler(void)
     /* Clear EXTI 0 flag */
     // zerujemy flage przerwania ale UWAGA!!! Tutaj zerujemy ja JEDYNKA, a nie zerem !!!!
     EXTI->PR |= EXTI_PR_PR13;
-
-
+    BUTTON__SetExtiButtonFlag();
     GPIOA->ODR ^= (1 << 5);//toggle green led on PA5
+#ifdef ESP_8266
+    UART_ESP__SendAllData();
+#elif defined BLUETOOTH
     UART__StartDmaTransmision(data,"", 3,"");
+#endif
 
   }
 }
@@ -226,7 +229,13 @@ void DMA1_Channel4_5_6_7_IRQHandler(void)
   if((DMA1->ISR & DMA_ISR_TCIF4) == DMA_ISR_TCIF4)
   {
     DMA1->IFCR = DMA_IFCR_CTCIF4;/* Clear TC flag */
+
+#ifdef ESP_8266
+    UART_ESP__TxInterrupt();
+#elif defined BLUETOOTH
     UART__TxInterrupt();
+#endif
+
   }
 
   // if receive data is finished, then check data, clear flags and start wait for
@@ -234,10 +243,19 @@ void DMA1_Channel4_5_6_7_IRQHandler(void)
   else if((DMA1->ISR & DMA_ISR_TCIF5) == DMA_ISR_TCIF5)
   {
     DMA1->IFCR = DMA_IFCR_CTCIF5;/* Clear TC flag */
+
+
+#ifdef ESP_8266
+    UART_ESP__RxInterrupt();
+    DMA1_Channel5->CCR &= ~ DMA_CCR_EN;
+    DMA1_Channel5->CNDTR = sizeof(stringtoreceive_esp);/* Data size */
+    DMA1_Channel5->CCR |= DMA_CCR_EN;
+#elif defined BLUETOOTH
     UART__RxInterrupt();
     DMA1_Channel5->CCR &= ~ DMA_CCR_EN;
     DMA1_Channel5->CNDTR = sizeof(stringtoreceive);/* Data size */
     DMA1_Channel5->CCR |= DMA_CCR_EN;
+#endif
   }
   else
   {
@@ -266,7 +284,7 @@ void ADC1_COMP_IRQHandler(void)
   {
     if ((ADC1->ISR & ADC_ISR_OVR) != 0)  /* Check OVR has triggered the IT */
     {
-      GPIOB->BSRR = (1<<5); /* Switch off green led to report it is due to overrun  */
+      GPIOA->BSRR = (1<<5); /* Switch off green led to report it is due to overrun  */
       ADC1->ISR |= ADC_ISR_EOC | ADC_ISR_EOSEQ | ADC_ISR_OVR; /* Clear all pending flags */
       ADC1->CR |= ADC_CR_ADSTP; /* Stop the sequence conversion */
       /* the data in the DR is considered as not valid */
@@ -287,6 +305,63 @@ void ADC1_COMP_IRQHandler(void)
         ADC__DeInit();
       }
     }
+  }
+}
+
+/**
+* @brief This function handles RTC global interrupt through EXTI lines 17, 19 and 20 and LSE CSS interrupt through EXTI line 19.
+*/
+/**
+  * Brief   This function handles RTC interrupt request.
+  * Param   None
+  * Retval  None
+  */
+void RTC_IRQHandler(void)
+{
+  /* Check WUT flag */
+  if((RTC->ISR & (RTC_ISR_WUTF)) == (RTC_ISR_WUTF))
+  {
+    RTC->ISR &=~ RTC_ISR_WUTF; /* Reset Wake up flag */
+    EXTI->PR |= EXTI_PR_PR20; /* clear exti line 20 flag */
+    GPIOA->ODR ^= (1 << 5) ; /* Toggle Green LED */
+    SYSTEM__30sTick();
+  }
+  else
+  {
+    NVIC_DisableIRQ(RTC_IRQn);/* Disable RTC_IRQn */
+  }
+}
+
+/**
+  * Brief   This function handles DMA1 channel 2 TC interrupt request.
+  * Param   None
+  * Retval  None
+  */
+void DMA1_Channel2_3_IRQHandler(void)
+{
+  // If tx transmission is finished, then clear dma flag and tx busy flag
+  // or if SPI transmision is active
+  if((DMA1->ISR & DMA_ISR_TCIF2) == DMA_ISR_TCIF2)
+  {
+    DMA1->IFCR |= DMA_IFCR_CTCIF2; /* Clear TC flag */
+    UART_RASPB__TxInterrupt();
+    //SPI_RASPB__RxInterrupt();
+  }
+  // if receive data is finished, then check data, clear flags and start wait for
+  // recieve state again
+  else if((DMA1->ISR & DMA_ISR_TCIF3) == DMA_ISR_TCIF3)
+  {
+   DMA1->IFCR = DMA_IFCR_CTCIF3;/* Clear TC flag */
+
+   UART_RASPB__RxInterrupt();
+   DMA1_Channel3->CCR &=~ DMA_CCR_EN;
+   DMA1_Channel3->CNDTR = sizeof(stringtoreceive);/* Data size */
+   DMA1_Channel3->CCR |= DMA_CCR_EN;
+  }
+  else
+  {
+    //error = ERROR_SPI; /* Report an error */
+    NVIC_DisableIRQ(DMA1_Channel2_3_IRQn); /* Disable DMA1_Channel2_3_IRQn */
   }
 }
 #ifdef __cplusplus

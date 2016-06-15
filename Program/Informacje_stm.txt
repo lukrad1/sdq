@@ -1,0 +1,19 @@
+- Wartoœci alternate function s¹ w datasheet a nie w reference 
+
+- Nazwy funkcji od przerwañ s¹ w pliku startup
+
+- przy konfiguracji RTC w stm32l0 w pliku .h od tego procka brakuje definicji dla przerwania ISR 20
+- równie¿ dla rtc w opisach nie ma informacji o tym, zeby przy inicie od startu wprowadzic rtc w tryb inicjalizacji:
+ RTC->ISR |= RTC_ISR_INIT;
+    while(RTC->ISR & RTC_ISR_INITF != RTC_ISR_INITF)
+    {
+      timeout++;
+      if(timeout > 20000)
+      {
+        /* Enable the write protection for RTC registers */
+        return ERROR_RTC;
+      }
+
+    }
+    timeout = 0;
+

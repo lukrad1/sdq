@@ -24,6 +24,9 @@ extern "C"
 #include "adc.h"
 #include "motors.h"
 #include "timer.h"
+#include "system.h"
+#include "obstacle.h"
+
 /****************************************************************************/
 /*                      DECLARATION AND DEFINITIONS                         */
 /****************************************************************************/
@@ -34,7 +37,7 @@ extern "C"
 /* UART status union. In this union are uart flags for example transmision flag */
 static volatile union uart__status_u
 {
-  uint8_t status; /* status variable, which is used to clear all uart status flag */
+  uint16_t status; /* status variable, which is used to clear all uart status flag */
   struct
   {
     uint8_t txBusyFlag: 1;
@@ -47,10 +50,12 @@ static volatile union uart__status_u
     uint8_t sendSharpTylSrodek : 1;
     uint8_t sendVrefValue:1;
     uint8_t sendPWMValue:1;
-    uint8_t flag5: 1;
+    uint8_t flag10: 1;
     uint8_t fullTransmision: 1;
-    uint8_t flag7: 1;
+    uint8_t flag12: 1;
     uint8_t Pwm_value;
+    uint8_t flag14: 1;
+    uint8_t flag15: 1;
   };
 }
 uart__status_u = {0}; /* Uart__status_u union declaraction. The variable name
@@ -76,6 +81,8 @@ volatile uint8_t RxBuffer[10];
 
 void UART__Init(uint32_t baudrate)
 {
+  GPIO__ConfigUART(1);
+
   /* Enable the peripheral clock USART2 */
   RCC->APB1ENR |= RCC_APB1ENR_USART2EN;
 
@@ -92,6 +99,16 @@ void UART__Init(uint32_t baudrate)
     /* add time out here for a robust application */
   }
   USART2->ICR = USART_ICR_TCCF;/* Clear TC flag */
+}
+
+
+/******************************* END FUNCTION *********************************/
+
+void UART__DeInit(void)
+{
+  /* Disable the peripheral clock USART2 */
+  RCC->APB1ENR &= ~RCC_APB1ENR_USART2EN;
+  GPIO__ConfigUART(0);
 }
 
 
@@ -144,6 +161,8 @@ void UART__StartDmaTransmision(int8_t* data, int8_t* additional_text,
                                uint8_t length, int8_t* message)
 {
   int i,j,h = 0;
+  SYSTEM__ClearSleepReadyFlag(SYSTEM__SLEEPREADY_UART);
+
   length += 4; // na znak konca lini i bit startu
   if(length > 20)
   {
@@ -171,7 +190,7 @@ void UART__StartDmaTransmision(int8_t* data, int8_t* additional_text,
     }
   }
   stringtosend[length-2] = 10;
-  stringtosend[length-1] = 12;
+  stringtosend[length-1] = 12; // czy tu nie powinno byc 13????
   /* start 8-bit transmission with DMA */
   DMA1_Channel4->CCR &=~ DMA_CCR_EN;
   DMA1_Channel4->CNDTR = length-1;/* Data size */
@@ -197,6 +216,7 @@ void UART__RxInterrupt(void)
       if(RxBuffer[index] == 10 && RxBuffer[index-1] == 13) // cr + lf
       {
         index = 4; // koniec transmisji i blokada, czekanie na bit startu
+        SYSTEM__ClearSleepReadyFlag(SYSTEM__SLEEPREADY_UART);
         uart__status_u.receivedData = 1;
       }
 
@@ -210,6 +230,7 @@ void UART__TxInterrupt(void)
   //kasowanie flagi zajetosci, bo wszystko bylo w dma, i gdy wszedlem do
   // przerwaniato juz mam po transmisji, odebralem wszystkie dane
   uart__status_u.txBusyFlag = 0;
+  SYSTEM__SetSleepReadyFlag(SYSTEM__SLEEPREADY_UART);
 }
 
 void UART__Poll(void)
@@ -261,6 +282,8 @@ void UART__Poll(void)
     }
 
     uart__status_u.receivedData = 0;
+    // jezeli bedzie cos do wyslania, to ponizej te flage wyzeruje w funkcji start dma
+    SYSTEM__SetSleepReadyFlag(SYSTEM__SLEEPREADY_UART);
   }
 
   if(!uart__status_u.txBusyFlag)
@@ -326,6 +349,10 @@ void UART__Poll(void)
     }
 
    }
+  else
+  {
+    SYSTEM__ClearSleepReadyFlag(SYSTEM__SLEEPREADY_UART);
+  }
 
 }
 

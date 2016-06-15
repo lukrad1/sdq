@@ -1280,6 +1280,7 @@ typedef struct
 #define  EXTI_IMR_IM16                       ((uint32_t)0x00010000)        /*!< Interrupt Mask on line 16 */
 #define  EXTI_IMR_IM17                       ((uint32_t)0x00020000)        /*!< Interrupt Mask on line 17 */
 #define  EXTI_IMR_IM19                       ((uint32_t)0x00080000)        /*!< Interrupt Mask on line 19 */
+#define  EXTI_IMR_IM20                       ((uint32_t)0x00100000)        /*!< Interrupt Mask on line 20 */
 #define  EXTI_IMR_IM21                       ((uint32_t)0x00200000)        /*!< Interrupt Mask on line 21 */
 #define  EXTI_IMR_IM22                       ((uint32_t)0x00400000)        /*!< Interrupt Mask on line 22 */
 #define  EXTI_IMR_IM23                       ((uint32_t)0x00800000)        /*!< Interrupt Mask on line 23 */
@@ -1306,6 +1307,7 @@ typedef struct
 #define  EXTI_EMR_EM16                       ((uint32_t)0x00010000)        /*!< Event Mask on line 16 */
 #define  EXTI_EMR_EM17                       ((uint32_t)0x00020000)        /*!< Event Mask on line 17 */
 #define  EXTI_EMR_EM19                       ((uint32_t)0x00080000)        /*!< Event Mask on line 19 */
+#define  EXTI_EMR_EM20                       ((uint32_t)0x00100000)        /*!< Event Mask on line 20 */
 #define  EXTI_EMR_EM21                       ((uint32_t)0x00200000)        /*!< Event Mask on line 21 */
 #define  EXTI_EMR_EM22                       ((uint32_t)0x00400000)        /*!< Event Mask on line 22 */
 #define  EXTI_EMR_EM23                       ((uint32_t)0x00800000)        /*!< Event Mask on line 23 */
@@ -1332,6 +1334,7 @@ typedef struct
 #define  EXTI_RTSR_TR16                      ((uint32_t)0x00010000)        /*!< Rising trigger event configuration bit of line 16 */
 #define  EXTI_RTSR_TR17                      ((uint32_t)0x00020000)        /*!< Rising trigger event configuration bit of line 17 */
 #define  EXTI_RTSR_TR19                      ((uint32_t)0x00080000)        /*!< Rising trigger event configuration bit of line 19 */
+#define  EXTI_RTSR_TR20                      ((uint32_t)0x00100000)        /*!< Rising trigger event configuration bit of line 20 */
 
 /*******************  Bit definition for EXTI_FTSR register *******************/
 #define  EXTI_FTSR_TR0                       ((uint32_t)0x00000001)        /*!< Falling trigger event configuration bit of line 0 */
@@ -1353,6 +1356,7 @@ typedef struct
 #define  EXTI_FTSR_TR16                      ((uint32_t)0x00010000)        /*!< Falling trigger event configuration bit of line 16 */
 #define  EXTI_FTSR_TR17                      ((uint32_t)0x00020000)        /*!< Falling trigger event configuration bit of line 17 */
 #define  EXTI_FTSR_TR19                      ((uint32_t)0x00080000)        /*!< Falling trigger event configuration bit of line 19 */
+#define  EXTI_FTSR_TR20                      ((uint32_t)0x00100000)        /*!< Falling trigger event configuration bit of line 20 */
 
 /******************* Bit definition for EXTI_SWIER register *******************/
 #define  EXTI_SWIER_SWIER0                   ((uint32_t)0x00000001)        /*!< Software Interrupt on line 0  */
@@ -1374,7 +1378,7 @@ typedef struct
 #define  EXTI_SWIER_SWIER16                  ((uint32_t)0x00010000)        /*!< Software Interrupt on line 16 */
 #define  EXTI_SWIER_SWIER17                  ((uint32_t)0x00020000)        /*!< Software Interrupt on line 17 */
 #define  EXTI_SWIER_SWIER19                  ((uint32_t)0x00080000)        /*!< Software Interrupt on line 19 */
-
+#define  EXTI_SWIER_SWIER20                  ((uint32_t)0x00100000)        /*!< Software Interrupt on line 20 */
 /******************  Bit definition for EXTI_PR register  *********************/
 #define  EXTI_PR_PR0                         ((uint32_t)0x00000001)        /*!< Pending bit 0  */
 #define  EXTI_PR_PR1                         ((uint32_t)0x00000002)        /*!< Pending bit 1  */
@@ -1395,6 +1399,7 @@ typedef struct
 #define  EXTI_PR_PR16                        ((uint32_t)0x00010000)        /*!< Pending bit 16 */
 #define  EXTI_PR_PR17                        ((uint32_t)0x00020000)        /*!< Pending bit 17 */
 #define  EXTI_PR_PR19                        ((uint32_t)0x00080000)        /*!< Pending bit 19 */
+#define  EXTI_PR_PR20                        ((uint32_t)0x00100000)        /*!< Pending bit 20 */
 
 /******************************************************************************/
 /*                                                                            */

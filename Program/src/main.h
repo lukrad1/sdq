@@ -45,6 +45,9 @@
   /****************************************************************************/
   /* Macro and const variable definition */
 
+//#define BLUETOOTH
+#define ESP_8266
+
   /*! System clock frequency */
   #define _MAIN__F_CPU     4000000
   #define MAIN__F_CPU      (uint32_t)_MAIN__F_CPU

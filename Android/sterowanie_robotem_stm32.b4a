@@ -54,19 +54,20 @@ Sub Globals
 	Dim Button5 As Button
 	Dim Button6 As Button
 	Dim Button20 As Button
+	Dim Button21 As Button
 	Dim Adapter As Serial	'zmienna pomocnicza do połączenia bluetooth'
 	Dim Timer1 As Timer		'zmienna pomocnicza określająca timer = definicja zmiennej timer'
 	Dim Timer2 As Timer
 	Dim Timer3 As Timer
 	Dim Timer4 As Timer
-	Dim Timer5 As Timer
+	Dim Timer5_Wybudzenie As Timer
 	Dim Flaga As Boolean	'zmienna pomocnicza oznaczająca, czy połączenie się powiodło czy też nie'
 	Dim Ekran As PhoneWakeState	'zmienna wykorzystana do podtrzymania podświetlenia ekranu'
 	Dim SeekBar1 As SeekBar
 	Dim Timer3 As Timer
 	
-	Dim ImageView1 As ImageView
 	Dim webview1 As WebView
+	Dim webview2 As WebView
 	
 	Dim xx As Int
  	Dim yy As Int
@@ -74,9 +75,12 @@ Sub Globals
 	Dim Temperatura_C(4) As Byte
 	Dim Finish_New_Data As Boolean
 	Dim Index_New_Data As Int
+	Dim Czekaj_za_wybudzeniem_timeout As Int
 	
 	Dim Zmiana As Boolean
+	Dim Aktywny2LButton As Boolean
 	Dim Checkbox1 As CheckBox
+	Dim Checkbox2 As CheckBox
 	Dim Strumien As AsyncStreams 'wymagany moduł RandomAccessFile
 	Dim ast As AsyncStreamsText 'wymagany moduł RandomAccessFile
 	Dim Nadawanie As Boolean	'zmienna globalna stworzona do wysyłania danych'
@@ -100,7 +104,7 @@ Sub Activity_Create(FirstTime As Boolean)
 	Label1.Left = 0						'tak samo jest z polozeniem od lewej strony ekranu, 0 czyli przy oknie'
 	Label1.Gravity = Gravity.CENTER_HORIZONTAL + Gravity.CENTER_VERTICAL 'linia centrująca wyświetlaną wartość, u nas wartość seekBar1'
 	Label1.TextSize = Label1.TextSize * 2 'Powiększenie czcionki oryginalnej dwukrotnie'
-	Label1.Text = "Zdalne sterowanie robotem mobilnym"
+	Label1.Text = "Sterowanie robotem mobilnym za pomocą Bluetooth"
 	
 	'**********************************************************************************************************************'
 	
@@ -123,13 +127,13 @@ Sub Activity_Create(FirstTime As Boolean)
 	
 	'**********************************************************************************************************************'
 	
-	Label4.Width = Activity.Width/3		'ten przycisk ma szerokość całego okna programu'
-	Label4.Height = Activity.Height/6	'ponieważ mam mieć w oknie 7 przycisków w pionie, więc pierwszy ma wysokość 1/7 okna'
-	Label4.Top = (Activity.Height/6) * 1'polozenie tej etykiety od gory to zero, czyli od samej gory okna programu'
-	Label4.Left = (Activity.Width/3) * 2'tak samo jest z polozeniem od lewej strony ekranu, 0 czyli przy oknie'
-	Label4.Gravity = Gravity.CENTER_HORIZONTAL + Gravity.CENTER_VERTICAL 'linia centrująca wyświetlaną wartość, u nas wartość seekBar1'
-	Label4.TextSize = Label2.TextSize * 1 'Powiększenie czcionki oryginalnej dwukrotnie'
-	Label4.Text = "Kąt położenia urządzenia: 0"
+	'Label4.Width = Activity.Width/3		'ten przycisk ma szerokość całego okna programu'
+	'Label4.Height = Activity.Height/6	'ponieważ mam mieć w oknie 7 przycisków w pionie, więc pierwszy ma wysokość 1/7 okna'
+	'Label4.Top = (Activity.Height/6) * 1'polozenie tej etykiety od gory to zero, czyli od samej gory okna programu'
+	'Label4.Left = (Activity.Width/3) * 2'tak samo jest z polozeniem od lewej strony ekranu, 0 czyli przy oknie'
+	'Label4.Gravity = Gravity.CENTER_HORIZONTAL + Gravity.CENTER_VERTICAL 'linia centrująca wyświetlaną wartość, u nas wartość seekBar1'
+	'Label4.TextSize = Label2.TextSize * 1 'Powiększenie czcionki oryginalnej dwukrotnie'
+	'Label4.Text = "Kąt położenia urządzenia: 0"
 	
 	'**********************************************************************************************************************'
 	
@@ -147,7 +151,7 @@ Sub Activity_Create(FirstTime As Boolean)
 	Label6.Top = (Activity.Height/6) * 3'polozenie tej etykiety od gory to zero, czyli od samej gory okna programu'
 	Label6.Left = (Activity.Width/3) * 2'tak samo jest z polozeniem od lewej strony ekranu, 0 czyli przy oknie'
 	Label6.TextSize = Label2.TextSize * 1 'Powiększenie czcionki oryginalnej dwukrotnie'
-	Label6.Text = "Sharpy"
+	Label6.Text = "Wykrywanie przeszkody"
 	
 	'**********************************************************************************************************************'
 	
@@ -232,6 +236,7 @@ Sub Activity_Create(FirstTime As Boolean)
 	yy = -1
 
 	PWM_last_Value = 0
+	Czekaj_za_wybudzeniem_timeout = 0
 	
 	Finish_New_Data = False
 	'**********************************************************************************************************************'
@@ -240,18 +245,16 @@ Sub Activity_Create(FirstTime As Boolean)
 	Timer2.Initialize("Timer2", 5000)	'inicjalizacja 2 timera potrzebnego do oczekiwania na połączenie, gdy przez 5sek'
 	Timer2.Enabled=False				'się nie połączy to ten timer rozłącza łączenie'
  	
-	Timer3.Initialize("Timer3", 2000)
+	Timer3.Initialize("Timer3", 500)
  	Timer3.Enabled=False
 	Flaga = False
 	
 	Timer4.Initialize("Timer4", 3000)
  	Timer4.Enabled=False
-	
-	Timer5.Initialize("Timer5",1500)
-	Timer5.Enabled = False
-	 
-	'webview1.Initialize("WebView1") 
 
+	Timer5_Wybudzenie.Initialize("Timer5_Wybudzenie",10000)
+	Timer5_Wybudzenie.Enabled=False
+	
 	Ekran.KeepAlive(True)				'załączenie opcji ciągłego podświetlania ekranu'
 
 	Nadawanie = True
@@ -281,7 +284,7 @@ Sub Create_Main_Window
 	Label1.Left = 0						'tak samo jest z polozeniem od lewej strony ekranu, 0 czyli przy oknie'
 	Label1.Gravity = Gravity.CENTER_HORIZONTAL + Gravity.CENTER_VERTICAL 'linia centrująca wyświetlaną wartość, u nas wartość seekBar1'
 	Label1.TextSize = Label1.TextSize * 2 'Powiększenie czcionki oryginalnej dwukrotnie'
-	Label1.Text = "Zdalne sterowanie robotem mobilnym"
+	Label1.Text = "Sterowanie robotem mobilnym za pomocą Bluetooth"
 	
 	'**********************************************************************************************************************'
 	
@@ -304,13 +307,13 @@ Sub Create_Main_Window
 	
 	'**********************************************************************************************************************'
 	
-	Label4.Width = Activity.Width/3		'ten przycisk ma szerokość całego okna programu'
-	Label4.Height = Activity.Height/6	'ponieważ mam mieć w oknie 7 przycisków w pionie, więc pierwszy ma wysokość 1/7 okna'
-	Label4.Top = (Activity.Height/6) * 1'polozenie tej etykiety od gory to zero, czyli od samej gory okna programu'
-	Label4.Left = (Activity.Width/3) * 2'tak samo jest z polozeniem od lewej strony ekranu, 0 czyli przy oknie'
-	Label4.Gravity = Gravity.CENTER_HORIZONTAL + Gravity.CENTER_VERTICAL 'linia centrująca wyświetlaną wartość, u nas wartość seekBar1'
-	Label4.TextSize = Label2.TextSize * 1 'Powiększenie czcionki oryginalnej dwukrotnie'
-	Label4.Text = "Kąt położenia urządzenia:"
+	'Label4.Width = Activity.Width/3		'ten przycisk ma szerokość całego okna programu'
+	'Label4.Height = Activity.Height/6	'ponieważ mam mieć w oknie 7 przycisków w pionie, więc pierwszy ma wysokość 1/7 okna'
+	'Label4.Top = (Activity.Height/6) * 1'polozenie tej etykiety od gory to zero, czyli od samej gory okna programu'
+	'Label4.Left = (Activity.Width/3) * 2'tak samo jest z polozeniem od lewej strony ekranu, 0 czyli przy oknie'
+	'Label4.Gravity = Gravity.CENTER_HORIZONTAL + Gravity.CENTER_VERTICAL 'linia centrująca wyświetlaną wartość, u nas wartość seekBar1'
+	'Label4.TextSize = Label2.TextSize * 1 'Powiększenie czcionki oryginalnej dwukrotnie'
+	'Label4.Text = "Kąt położenia urządzenia:"
 	
 	'**********************************************************************************************************************'
 	
@@ -328,7 +331,7 @@ Sub Create_Main_Window
 	Label6.Top = (Activity.Height/6) * 3'polozenie tej etykiety od gory to zero, czyli od samej gory okna programu'
 	Label6.Left = (Activity.Width/3) * 2'tak samo jest z polozeniem od lewej strony ekranu, 0 czyli przy oknie'
 	Label6.TextSize = Label2.TextSize * 1 'Powiększenie czcionki oryginalnej dwukrotnie'
-	Label6.Text = "Sharpy"
+	Label6.Text = "Wykrywanie przeszkody"
 	
 	'**********************************************************************************************************************'
 	
@@ -433,11 +436,6 @@ Sub Timer1_Tick							'funkcja obslugi timera dla sprawdzenia aktywności blueto
 		  Label2.Text="Bluetooth wyłączony"
 		  Flaga=False
 		  Button6.Text = "Włącz" & CRLF & "bluetooth"
-		  Button1.Enabled=True
-		  Button2.Enabled=True
-		  Button3.Enabled=True
-		  Button4.Enabled=True
-		  Button5.Enabled=True
 		  
 		 End If
 	Catch
@@ -462,6 +460,7 @@ Sub Timer3_tick
 	   	Rozkaz(13)
 	   	Rozkaz(10)
 		End If
+		webview2.LoadUrl("http://lukrad1.ddns.net:5010/go_left")
 	Else If xx <= 35 Then
 		If Nadawanie = True Then			'jeżeli mamy połączenie to spróbuj wysłać dane'
 	   'komenda "20" - jazda w prawo
@@ -469,8 +468,9 @@ Sub Timer3_tick
 	   Rozkaz(48 + 2)
 	   Rozkaz(48 + 0)
 	   Rozkaz(13)
-	   Rozkaz(10)
+	   Rozkaz(10)		
 	   End If
+	   webview2.LoadUrl("http://lukrad1.ddns.net:5010/go_right")
 	Else If yy >= 70 Then
 	 	If Nadawanie = True Then			'jeżeli mamy połączenie to spróbuj wysłać dane'
 	   	'komenda "25" - jazda do tylu
@@ -479,7 +479,8 @@ Sub Timer3_tick
 	   Rozkaz(48 + 1)
 	   Rozkaz(13)
 	   Rozkaz(10)
-	 	End If
+		End If
+		webview2.LoadUrl("http://lukrad1.ddns.net:5010/go_back")
 	 Else If yy <= 45 Then
 	 	If Nadawanie = True Then			'jeżeli mamy połączenie to spróbuj wysłać dane'
 	    'komenda "11" - jazda do przodu' odwrotne podlaczenie wiec zamiana tyl przod
@@ -488,8 +489,8 @@ Sub Timer3_tick
 	   Rozkaz(48 + 5)
 	   Rozkaz(13)
 	   Rozkaz(10)
-	   	End If  
-	   
+	   End If  
+	   webview2.LoadUrl("http://lukrad1.ddns.net:5010/go_ahead")
 	 Else If xx > 35 AND xx < 65 AND yy > 45 AND yy < 70 Then
 	 	If Nadawanie = True Then			'jeżeli mamy połączenie to spróbuj wysłać dane'
 	   	'komenda "22" - stop'
@@ -499,6 +500,7 @@ Sub Timer3_tick
 	   	Rozkaz(13)
 	   	Rozkaz(10)
 		End If
+		webview2.LoadUrl("http://lukrad1.ddns.net:5010/stop_robot")
 	 End If  
 	
 	xx = -1
@@ -518,19 +520,19 @@ Sub Timer4_tick
 	End If
 End Sub
 
-Sub Timer5_tick
-
-'webview1.LoadUrl("http://192.168.1.53:9000/?action=stream") '("http://192.168.1.53:9000/?action=snapshot")
-
+Sub Timer5_Wybudzenie_tick
+	
+	webview2.LoadUrl("http://lukrad1.ddns.net:5020/wybudz")
+	Czekaj_za_wybudzeniem_timeout = Czekaj_za_wybudzeniem_timeout + 1
+	If Czekaj_za_wybudzeniem_timeout > 7 Then
+		Button21.Enabled = True
+		Timer5_Wybudzenie.Enabled = False
+		Czekaj_za_wybudzeniem_timeout = 0
+		webview1.LoadUrl("http://lukrad1.ddns.net:9000/?action=stream")
+	End If
+	
+	
 End Sub
-
-'Sub WebView1_PageFinished (Url As String)
-'	webview1.SetBackgroundImage(webview1.CaptureBitmap)
-'webview1.CaptureBitmap
-'DoEvents 
-
-
-'End Sub
 
 Sub Strumien_Error
  Adapter.Disconnect
@@ -593,7 +595,7 @@ End Sub
 
 Sub Activity_Resume
 	CzujnikRuchu.StartListening("CzujnikRuchu")
-	CzujnikMagnetyczny.StartListening("CzujnikMagnetyczny")
+	'CzujnikMagnetyczny.StartListening("CzujnikMagnetyczny")
 End Sub
 
 Sub CzujnikRuchu_SensorChanged(XYZ() As Float)
@@ -606,9 +608,9 @@ Sub CzujnikRuchu_SensorChanged(XYZ() As Float)
  Zmiana=True
 End Sub
  
-Sub CzujnikMagnetyczny_SensorChanged(Alfa() As Float)
- Label4.Text="Kąt położenia urządzenia: " & Round(Alfa(0)) & Chr(176)
-End Sub
+'Sub CzujnikMagnetyczny_SensorChanged(Alfa() As Float)
+ 'Label4.Text="Kąt położenia urządzenia: " & Round(Alfa(0)) & Chr(176)
+'End Sub
 
 Sub Activity_Pause (UserClosed As Boolean)
 
@@ -638,14 +640,42 @@ Sub Checkbox1_CheckedChange(Checked As Boolean)
 	If Checked = True Then
 
 		Timer3.Enabled = True
-		Timer5.Enabled = True
+
+		Button1.Enabled=False
+		Button2.Enabled=False
+		Button3.Enabled=False
+		Button4.Enabled=False
+		Button5.Enabled=False
 		'StartActivity(Video_Screen)
 		RemoveViews
 		Activity.LoadLayout("video_robot")
 		Create_Window
 		'webview1.LoadUrl("http://192.168.1.53:9000/?action=stream")
 		'webview1.LoadUrl("http://192.168.1.53:9000/?action=stream?user=lukrad1&pwd=junak63")
-		webview1.LoadUrl("http://lukrad1.ddns.net:9000/?action=stream")
+		'webview1.LoadUrl("http://lukrad1.ddns.net:9000/?action=stream")
+	End If
+End Sub
+Sub Checkbox2_CheckedChange(Checked As Boolean)
+
+	If Checked = True Then
+		Timer3.Enabled = False
+	  Button1.Enabled=True
+	  Button2.Enabled=True
+	  Button3.Enabled=True
+	  Button4.Enabled=True
+	  Button5.Enabled=True
+	  Aktywny2LButton = True
+	  Checkbox2.Text = "Button ON, Acc OFF"
+	Else If Checked = False Then
+	 
+	 Timer3.Enabled = True
+	 Button1.Enabled=False
+	 Button2.Enabled=False
+	 Button3.Enabled=False
+	 Button4.Enabled=False
+	 Button5.Enabled=False
+	 Aktywny2LButton = False
+	 Checkbox2.Text = "Button OFF, Acc ON"
 	End If
 End Sub
 
@@ -665,6 +695,13 @@ Sub Button1_Click
 	   Rozkaz(13)
 	   Rozkaz(10)
 	 End If
+	 
+	 If Aktywny2LButton = True Then
+	 webview2.LoadUrl("http://lukrad1.ddns.net:5010/go_ahead")
+	 End If
+	 
+	 
+	 
 End Sub
 
 Sub Button2_Click
@@ -683,6 +720,11 @@ Sub Button2_Click
 	   Rozkaz(13)
 	   Rozkaz(10)
 	 End If
+	 
+	 If Aktywny2LButton = True Then
+	 webview2.LoadUrl("http://lukrad1.ddns.net:5010/go_left")
+	 End If
+	 
 End Sub
 Sub Button3_Click
 	
@@ -700,7 +742,10 @@ Sub Button3_Click
 	   Rozkaz(13)
 	   Rozkaz(10)
 	 End If
-	
+	 
+	If Aktywny2LButton = True Then
+	 webview2.LoadUrl("http://lukrad1.ddns.net:5010/stop_robot")
+	 End If
 End Sub
 
 Sub Button4_Click
@@ -719,7 +764,10 @@ Sub Button4_Click
 	   Rozkaz(13)
 	   Rozkaz(10)
 	 End If
-	
+	 
+	If Aktywny2LButton = True Then
+	 webview2.LoadUrl("http://lukrad1.ddns.net:5010/go_right")
+	 End If
 End Sub
 Sub Button5_Click
 	
@@ -736,6 +784,10 @@ Sub Button5_Click
 	   Rozkaz(48 + 1)
 	   Rozkaz(13)
 	   Rozkaz(10)
+	 End If
+	 
+	 If Aktywny2LButton = True Then
+	 webview2.LoadUrl("http://lukrad1.ddns.net:5010/go_back")
 	 End If
 	
 End Sub
@@ -770,11 +822,16 @@ End Sub
 
 Sub Button20_Click
 	Timer3.Enabled = False
-	Timer5.Enabled = False
 	RemoveViews
 	Activity.LoadLayout("robot_design")
 	Create_Main_Window
 	
+End Sub
+
+Sub Button21_Click
+	Timer5_Wybudzenie.Enabled = True
+	Button21.Enabled = False
+	webview1.LoadUrl("http://lukrad1.ddns.net:9000/?action=stream")
 End Sub
 
 Sub Activity_KeyPress (KeyCode As Int) As Boolean	'funkcja wyłączająca program, czyli sprzątająca śmieci'
@@ -840,47 +897,124 @@ Activity.Title = "Sterowanie Robotem Mobilnym"
 	
 	'**********************************************************************************************************************'
 	
-	Label5.Width = Activity.Width/3		'ten przycisk ma szerokość całego okna programu'
-	Label5.Height = Activity.Height/6	'ponieważ mam mieć w oknie 7 przycisków w pionie, więc pierwszy ma wysokość 1/7 okna'
-	Label5.Top = (Activity.Height/6) * 4'polozenie tej etykiety od gory to zero, czyli od samej gory okna programu'
-	Label5.Left = (Activity.Width/3) * 2'tak samo jest z polozeniem od lewej strony ekranu, 0 czyli przy oknie'
-	Label5.TextSize = Label2.TextSize * 1 'Powiększenie czcionki oryginalnej dwukrotnie'
-	Label5.Text = "Stopnie *C"
+	'Label5.Width = Activity.Width/3		'ten przycisk ma szerokość całego okna programu'
+	'Label5.Height = Activity.Height/6	'ponieważ mam mieć w oknie 7 przycisków w pionie, więc pierwszy ma wysokość 1/7 okna'
+	'Label5.Top = (Activity.Height/6) * 4'polozenie tej etykiety od gory to zero, czyli od samej gory okna programu'
+	'Label5.Left = (Activity.Width/3) * 2'tak samo jest z polozeniem od lewej strony ekranu, 0 czyli przy oknie'
+	'Label5.TextSize = Label2.TextSize * 1 'Powiększenie czcionki oryginalnej dwukrotnie'
+	'Label5.Text = "Stopnie *C"
 
 	'**********************************************************************************************************************'
 	
-	Button20.Width = Activity.Width/3		'ten przycisk ma szerokość całego okna programu'
-	Button20.Height = Activity.Height/6	'ponieważ mam mieć w oknie 7 przycisków w pionie, więc pierwszy ma wysokość 1/7 okna'
-	Button20.Top = (Activity.Height/6) * 5'polozenie tej etykiety od gory to zero, czyli od samej gory okna programu'
-	Button20.Left = (Activity.Width/3) * 2'tak samo jest z polozeniem od lewej strony ekranu, 0 czyli przy oknie'
-	Button20.TextSize = Label2.TextSize * 1 'Powiększenie czcionki oryginalnej dwukrotnie'
+	Button20.Width = Activity.Width/4		'ten przycisk ma szerokość całego okna programu'
+	Button20.Height = Activity.Height/9	'ponieważ mam mieć w oknie 7 przycisków w pionie, więc pierwszy ma wysokość 1/7 okna'
+	Button20.Top = (Activity.Height/9) * 8'polozenie tej etykiety od gory to zero, czyli od samej gory okna programu'
+	Button20.Left = (Activity.Width/4) * 3'tak samo jest z polozeniem od lewej strony ekranu, 0 czyli przy oknie'
+	Button20.TextSize = Label2.TextSize * 0.7 'Powiększenie czcionki oryginalnej dwukrotnie'
 	Button20.Text = "Powrót"
 	
 	'**********************************************************************************************************************'
 	
+	Button21.Width = Activity.Width/4		'ten przycisk ma szerokość całego okna programu'
+	Button21.Height = Activity.Height/9	'ponieważ mam mieć w oknie 7 przycisków w pionie, więc pierwszy ma wysokość 1/7 okna'
+	Button21.Top = (Activity.Height/9) * 6'polozenie tej etykiety od gory to zero, czyli od samej gory okna programu'
+	Button21.Left = (Activity.Width/4) * 3'tak samo jest z polozeniem od lewej strony ekranu, 0 czyli przy oknie'
+	Button21.TextSize = Label2.TextSize * 0.7 'Powiększenie czcionki oryginalnej dwukrotnie'
+	Button21.Text = "Wybudź urządzenie"
+	Button21.Enabled = True
+	'**********************************************************************************************************************'
+	
+
 
 	webview1.Width = Activity.Width		'ten przycisk ma szerokość całego okna programu'
 	webview1.Height = (Activity.Height/6)*3	'ponieważ mam mieć w oknie 7 przycisków w pionie, więc pierwszy ma wysokość 1/7 okna'
 	webview1.Top = (Activity.Height/6) * 1'polozenie tej etykiety od gory to zero, czyli od samej gory okna programu'
 	webview1.Left = (Activity.Width/3) * 0'tak samo jest z polozeniem od lewej strony ekranu, 0 czyli przy oknie'
 	
+	webview2.Width = 0		'ten przycisk ma szerokość całego okna programu'
+	webview2.Height = 0		'ponieważ mam mieć w oknie 7 przycisków w pionie, więc pierwszy ma wysokość 1/7 okna'
+	webview2.Top = (Activity.Height/6) * 1'polozenie tej etykiety od gory to zero, czyli od samej gory okna programu'
+	webview2.Left = (Activity.Width/3) * 0'tak samo jest z polozeniem od lewej strony ekranu, 0 czyli przy oknie'
+	
+	Button1.Width = Activity.Width/3		'Ponieważ w jednej lini mam mieć dwa przyciski, dlatego szerokość jednego to 1/2 okna'
+	Button1.Height = Activity.Height/9		
+	Button1.Top = (Activity.Height/9) * 6	 
+	Button1.Left = (Activity.Width/3) * 1
+	Button1.TextSize = Button1.TextSize * 1
+	Button1.Text = "Do przodu"
+
+	
 	'**********************************************************************************************************************'
 	
-	SeekBar1.Width = Activity.Width/3
-	SeekBar1.Height = Activity.Height/6
-	SeekBar1.Top = (Activity.Height/6) * 5
-	SeekBar1.Left = 0
-	SeekBar1.Max = 255
-	SeekBar1.Value = 0
+	Button2.Width = Activity.Width/3
+	Button2.Height = Activity.Height/9
+	Button2.Top = (Activity.Height/9) * 7
+	Button2.Left = 0
+	Button2.TextSize = Button2.TextSize *1
+	Button2.Text = "W lewo"
+				'Po włączeniu programu przycisk nieaktywny, nie mogę w niego klikać'
 	
 	'**********************************************************************************************************************'
 	
-	Label3.Width = Activity.Width/2		'ten przycisk ma szerokość całego okna programu'
-	Label3.Height = Activity.Height/6	'ponieważ mam mieć w oknie 7 przycisków w pionie, więc pierwszy ma wysokość 1/7 okna'
-	Label3.Top = (Activity.Height/6) * 4						'polozenie tej etykiety od gory to zero, czyli od samej gory okna programu'
-	Label3.Left = 0						'tak samo jest z polozeniem od lewej strony ekranu, 0 czyli przy oknie'
-	Label3.Gravity = Gravity.CENTER_HORIZONTAL + Gravity.CENTER_VERTICAL 'linia centrująca wyświetlaną wartość, u nas wartość seekBar1'
-	Label3.TextSize = Label2.TextSize * 2 'Powiększenie czcionki oryginalnej dwukrotnie'
-	Label3.Text = "PWM: 0"
+	Button3.Width = Activity.Width/3
+	Button3.Height = Activity.Height/9
+	Button3.Top = (Activity.Height/9) * 7
+	Button3.Left = (Activity.Width/3) * 1
+	Button3.TextSize = Button3.TextSize * 1
+	Button3.Text = "Zatrzymaj"
+			'Po włączeniu programu przycisk nieaktywny, nie mogę w niego klikać'
+	
+	'**********************************************************************************************************************'
+	
+	Button4.Width = Activity.Width/3
+	Button4.Height = Activity.Height/9
+	Button4.Top = (Activity.Height/9) * 7
+	Button4.Left = (Activity.Width/3) * 2
+	Button4.TextSize = Button3.TextSize * 1
+	Button4.Text = "W prawo"
+
+	
+	'**********************************************************************************************************************'
+	
+	Button5.Width = Activity.Width/3
+	Button5.Height = Activity.Height/9 
+	Button5.Top = (Activity.Height/9) * 8
+	Button5.Left = (Activity.Width/3) * 1
+	Button5.TextSize = Button4.TextSize * 1
+	Button5.Text = "Do tyłu"
+				'Po włączeniu programu przycisk nieaktywny, nie mogę w niego klikać'
+	
+	'**********************************************************************************************************************'
+	
+	Checkbox2.Width = Activity.Width/3		'Ponieważ w jednej lini mam mieć dwa przyciski, dlatego szerokość jednego to 1/2 okna'
+	Checkbox2.Height = Activity.Height/9		
+	Checkbox2.Top = (Activity.Height/9)*8	 
+	Checkbox2.Left = 0
+	Checkbox2.TextSize = Checkbox1.TextSize * 1
+	Checkbox2.Text = "Button OFF, Acc ON"
+	Checkbox2.Enabled = True
+	'**********************************************************************************************************************'
+	
+	'SeekBar1.Width = Activity.Width/3
+	'SeekBar1.Height = Activity.Height/6
+	'SeekBar1.Top = (Activity.Height/6) * 5
+	'SeekBar1.Left = 0
+	'SeekBar1.Max = 255
+	'SeekBar1.Value = 0
+	
+	'**********************************************************************************************************************'
+	
+	'Label3.Width = Activity.Width/2		'ten przycisk ma szerokość całego okna programu'
+	'Label3.Height = Activity.Height/6	'ponieważ mam mieć w oknie 7 przycisków w pionie, więc pierwszy ma wysokość 1/7 okna'
+	'Label3.Top = (Activity.Height/6) * 4						'polozenie tej etykiety od gory to zero, czyli od samej gory okna programu'
+	'Label3.Left = 0						'tak samo jest z polozeniem od lewej strony ekranu, 0 czyli przy oknie'
+	'Label3.Gravity = Gravity.CENTER_HORIZONTAL + Gravity.CENTER_VERTICAL 'linia centrująca wyświetlaną wartość, u nas wartość seekBar1'
+	'Label3.TextSize = Label2.TextSize * 2 'Powiększenie czcionki oryginalnej dwukrotnie'
+	'Label3.Text = "PWM: 0"
 		
+	Button1.Enabled=False
+	Button2.Enabled=False
+	Button3.Enabled=False
+	Button4.Enabled=False
+	Button5.Enabled=False
 End Sub

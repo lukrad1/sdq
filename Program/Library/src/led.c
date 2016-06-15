@@ -16,9 +16,11 @@
 /* other (non local) library */
 /* ... */
 /* local library */
-
+#include "stm32l0xx.h"
 #include "led.h"
 #include "gpio.h"
+#include "system.h"
+
 /****************************************************************************/
 /*                      DECLARATION AND DEFINITIONS                         */
 /****************************************************************************/
@@ -72,9 +74,16 @@ void LED__RGB(uint8_t red, uint8_t green, uint8_t blue)
 
 /******************************* END FUNCTION *********************************/
 
-void LED__Poll(void)
+void LED__1msPoll(void)
 {
-	
+  if((GPIOA->IDR & (1<<5)))
+  {
+    SYSTEM__ClearSleepReadyFlag(SYSTEM__SLEEPREADY_LED_BLINK);
+  }
+  else
+  {
+    SYSTEM__SetSleepReadyFlag(SYSTEM__SLEEPREADY_LED_BLINK);
+  }
 }
 
 /******************************* END FUNCTION *********************************/

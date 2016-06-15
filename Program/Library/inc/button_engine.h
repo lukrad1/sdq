@@ -64,7 +64,9 @@ void BUTTON__Init(void);
 *
 */
 void BUTTON__Init(void);
-
+void BUTTON__SetExtiButtonFlag(void);
+void BUTTON__ClearExtiButtonFlag(void);
+uint8_t BUTTON__GetExtiButtonFlag(void);
 
 
 #ifdef __cplusplus

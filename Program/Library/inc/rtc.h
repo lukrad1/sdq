@@ -37,7 +37,17 @@
 
 /* Typedef definition */
 
+/** @defgroup RTCEx_Wakeup_Timer_Definitions RTCEx Wakeup Timer Definitions
+  * @{
+  */
+#define RTC_WAKEUPCLOCK_RTCCLK_DIV16        ((uint32_t)0x00000000)
+#define RTC_WAKEUPCLOCK_RTCCLK_DIV8         RTC_CR_WUCKSEL_0
+#define RTC_WAKEUPCLOCK_RTCCLK_DIV4         RTC_CR_WUCKSEL_1
+#define RTC_WAKEUPCLOCK_RTCCLK_DIV2         ((uint32_t) (RTC_CR_WUCKSEL_0 | RTC_CR_WUCKSEL_1))
+#define RTC_WAKEUPCLOCK_CK_SPRE_16BITS      RTC_CR_WUCKSEL_2
+#define RTC_WAKEUPCLOCK_CK_SPRE_17BITS      ((uint32_t) (RTC_CR_WUCKSEL_1 | RTC_CR_WUCKSEL_2))
 
+#define RTC_EXTI_LINE_WAKEUPTIMER_EVENT       ((uint32_t)EXTI_IMR_IM20)  /*!< External interrupt line 20 Connected to the RTC Wakeup event */
 
 /****************************************************************************/
 /*                         GLOBAL VARIABLE DECLARATION                      */
@@ -63,7 +73,7 @@ extern int32_t _param_RTC_sleep_time; //ok. RTC_sleep_time+1 sekund spania  1s->
 
 /* Exported functions */
 
-void RTC__Init(void);
+uint8_t RTC__Init(void);
 
 void RTC__Set_Wakeup(uint32_t *wakeup_time);
 void RTC__Set_Alarm(uint32_t *alarm_time);

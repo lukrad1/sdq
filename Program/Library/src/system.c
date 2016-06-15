@@ -21,6 +21,13 @@
 #include "system.h"
 #include "main.h"
 #include "gpio.h"
+#include "obstacle.h"
+#include "uart.h"
+#include "adc.h"
+#include "button_engine.h"
+#include "led.h"
+#include "uart_raspb.h"
+
 /****************************************************************************/
 /*                      DECLARATION AND DEFINITIONS                         */
 /****************************************************************************/
@@ -28,7 +35,10 @@
 
 /* Typedef definition (local) */
 
+  volatile SYSTEM__sleepFlags_u_t SYSTEM__sleepFlags_u;
 
+  volatile uint8_t system__1msFlag = 0;
+  volatile uint8_t system__30sFlag = 0;
 /****************************************************************************/
 /*                         GLOBAL VARIABLE DECLARATION                      */
 /****************************************************************************/
@@ -101,6 +111,171 @@ __INLINE void SystemClock_Config(void)
 
 /**************************** END FUNCTION *********************************/
 
+static void system__CheckInterruptSleepFlag(void)
+{
+  if(BUTTON__GetExtiButtonFlag())
+  {
+    BUTTON__ClearExtiButtonFlag();
+    SYSTEM__ClearSleepReadyFlag(SYSTEM__SLEEPREADY_BUTTON);
+  }
+  else
+  {
+    SYSTEM__SetSleepReadyFlag(SYSTEM__SLEEPREADY_BUTTON);
+  }
+}
+
+/**************************** END FUNCTION *********************************/
+
+/**
+* \brief This function executes every 2ms when uC dosen't sleep.
+*
+*/
+void SYSTEM__1msPoll(void)
+{
+  if(system__1msFlag)
+  {
+    system__1msFlag = 0;
+    OBSTACLE__1msPoll();
+    ADC__1msPoll();
+    LED__1msPoll();
+  }
+}
+
+/******************************* END FUNCTION *********************************/
+
+/**
+* \brief This function executes once per 30s (once per wakeup).
+*
+*
+*/
+void SYSTEM__30sPoll(void)
+{
+  if(system__30sFlag)
+  {
+    system__30sFlag = 0;
+    UART_RASPB__SetVrefToSend();
+    //UART__SetIntTempToSend();
+    //SPI_Raspb__SetDefaultMessToSend();
+  }
+}
+
+/******************************* END FUNCTION *********************************/
+
+/**
+* \brief This functions provides a 2ms time base for the purposes of system.
+* It should be placed in 2ms interrupt.
+*
+*
+*/
+void SYSTEM__1msTick(void)
+{
+  system__1msFlag = 1;
+
+}
+
+/******************************* END FUNCTION *********************************/
+
+/**
+* \brief This functions provides a 30s time base for the purposes of system.
+* It should be placed in 30s interrupt.
+*
+*/
+void SYSTEM__30sTick(void)
+{
+  system__30sFlag = 1;
+  SYSTEM__ClearSleepReadyFlag(SYSTEM__SLEEPREADY_ALL_BEFORE_SLEEP);
+
+}
+
+/******************************* END FUNCTION *********************************/
+
+/**
+* \brief This function sets flags which indicates that coresponding module is
+* ready to go to sleep.
+*
+*/
+ void SYSTEM__SetSleepReadyFlag(SYSTEM__sleep_e flag)
+ {
+
+   if(flag == SYSTEM__SLEEPREADY_ALL)
+   {
+     SYSTEM__sleepFlags_u.flags = SYSTEM__SLEEPFLAG_MASK;
+   }
+   else if(flag == SYSTEM__SLEEPREADY_ALL_BEFORE_SLEEP)
+   {
+     SYSTEM__sleepFlags_u.flags |= SYSTEM__SLEEP_AUTOCLEAR_MASK;
+   }
+   else
+   {
+     SYSTEM__sleepFlags_u.flags |= (uint8_t)((uint8_t)1 << (uint8_t)flag);
+   }
+
+ }
+
+ /******************************* END FUNCTION *********************************/
+
+ /**
+ * \brief This function clear flags which indicates that modules are
+ * ready to go to sleep.
+ *
+ */
+ void SYSTEM__ClearSleepReadyFlag(SYSTEM__sleep_e flag)
+ {
+   if(flag == SYSTEM__SLEEPREADY_ALL)
+   {
+     SYSTEM__sleepFlags_u.flags = 0x00;
+   }
+   else if(flag == SYSTEM__SLEEPREADY_ALL_BEFORE_SLEEP)
+   {
+     SYSTEM__sleepFlags_u.flags &= ~SYSTEM__SLEEP_AUTOCLEAR_MASK;
+   }
+   else
+   {
+     SYSTEM__sleepFlags_u.flags &= (uint8_t)~((uint8_t)1 << (uint8_t)flag);
+   }
+ }
+ /******************************* END FUNCTION *********************************/
+
+ /**
+ * \brief This function returns flags which indicates that modules are
+ * ready to go to sleep.
+ *
+ */
+ uint8_t SYSTEM__GetSleepReadyFlag(SYSTEM__sleep_e flag)
+ {
+   if(flag == 0xFF)
+   {
+     return (uint8_t)SYSTEM__sleepFlags_u.flags;
+   }
+
+   return (uint8_t)(SYSTEM__sleepFlags_u.flags & ((uint8_t)1<<(uint8_t)flag));
+ }
+ /******************************* END FUNCTION *********************************/
+
+ /**
+ * \brief This function periodicaly checks sleep conditions and goes to sleep.
+ *
+ *
+ */
+ void SYSTEM__SleepPoll(void)
+ {
+   system__CheckInterruptSleepFlag();
+
+   if((SYSTEM__sleepFlags_u.flags & SYSTEM__SLEEPFLAG_MASK) == SYSTEM__SLEEPFLAG_MASK)
+   {
+     ADC__DeInit();
+     UART__DeInit();
+     GPIOB->BSRR = (1<<5); //switch off led
+     //be sure that an adc is turned off
+     //ADC__DeInitOptimal();
+     //turn off step-up converter
+     //PSU__SetupBatteryConverter(PSU__OFF);
+     //go to sleep
+    //halt();
+     //after wakeup flags of the sleep are cleared in SYSTEM__30sTick()
+     //automatically
+   }
+ }
 #ifdef __cplusplus
   }
 #endif
