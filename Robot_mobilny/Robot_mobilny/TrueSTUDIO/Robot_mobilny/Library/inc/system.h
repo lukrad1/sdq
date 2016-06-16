@@ -109,7 +109,7 @@ void SYSTEM__SetSleepReadyFlag(SYSTEM__sleep_e flag);
 void SYSTEM__ClearSleepReadyFlag(SYSTEM__sleep_e flag);
 uint8_t SYSTEM__GetSleepReadyFlag(SYSTEM__sleep_e flag);
 void SYSTEM__SleepPoll(void);
-
+void SYSTEM__SetEspTimeoutValue(uint32_t value);
 
 
 

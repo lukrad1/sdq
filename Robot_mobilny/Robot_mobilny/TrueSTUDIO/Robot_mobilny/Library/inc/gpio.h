@@ -214,7 +214,9 @@ void GPIO__ConfigSPI_RASPB(uint8_t state);
 
 void GPIO__ConfigUART_RASPB(uint8_t state);
 
-void GPIO__ConfigSharpEnable(uint8_t state);
+void GPIO__ConfigSharpEspEnable(uint8_t state);
+
+void GPIO__ConfigRaspbEnable(uint8_t state);
 #ifdef __cplusplus
   }
 #endif

@@ -61,7 +61,24 @@ static volatile union uart_esp__status_u
 uart_esp__status_u = {0}; /* Uart__status_u union declaraction. The variable name
                          is this same: uart__status_u. */
 
+static volatile union uart_esp__init_u
+{
+  uint8_t status; /* status variable, which is used to clear all uart status flag */
+  struct
+  {
+    uint8_t esp_is_wakeup: 1;
+    uint8_t esp_finish_transmision: 1;
+    uint8_t esp_start_init: 1;
+    uint8_t esp_transmision_timeout: 1;
+    uint8_t flag4: 1;
+    uint8_t flag5: 1;
+    uint8_t flag6: 1;
+    uint8_t flag7 : 1;
 
+  };
+}
+uart_esp__init_u = {0}; /* Uart__status_u union declaraction. The variable name
+                         is this same: uart__status_u. */
 /****************************************************************************/
 /*                         GLOBAL VARIABLE DECLARATION                      */
 /****************************************************************************/
@@ -308,6 +325,19 @@ void UART_ESP__Poll(void)
 {
   static uint32_t timeout = 0;
   static uint32_t run_server_timeout = 0xFFFF;
+  static all_data_is_send = 0;
+
+  if(UART_ESP__GetStartInit() && !all_data_is_send)
+  {
+	  all_data_is_send = 1;
+	  UART_ESP__SendAllData();
+  }
+  else if(!UART_ESP__GetStartInit() && all_data_is_send)
+  {
+	  all_data_is_send = 0;
+  }
+
+
   if(uart_esp__status_u.receivedData)
   {
 
@@ -321,7 +351,10 @@ void UART_ESP__Poll(void)
             && RxBuffer_esp[6] == 0x7A)
     {
 
-      //turn on raspberry
+      //turn on raspberry and motors
+      GPIO__ConfigRaspbEnable(1);
+      GPIO__ConfigMotorsEnable(1);
+      SYSTEM__SetEspTimeoutValue(60000); // timeout na 60s
       uart_esp__status_u.sendEspData = 1;
     }
     
@@ -432,14 +465,97 @@ void UART_ESP__Poll(void)
 
 void UART_ESP__SendAllData(void)
 {
-  uart_esp__status_u.rst_esp = 1;
-  //uart_esp__status_u.setCwmode = 1;
+  //uart_esp__status_u.rst_esp = 1;
+  uart_esp__status_u.setCwmode = 1;
   //uart_esp__status_u.setCipmode = 1;
   //uart_esp__status_u.setMultiConnection = 1;
   //uart_esp__status_u.startEspServer = 1;
   //uart_esp__status_u.sendEspData = 1;
   //uart_esp__status_u.sendEspDataPayload = 1;
   //uart_esp__status_u.finishEspData = 1;
+}
+
+/******************************* END FUNCTION *********************************/
+
+void UART_ESP__SetIsWakeupFlag(void)
+{
+	uart_esp__init_u.esp_is_wakeup = 1;
+}
+
+/******************************* END FUNCTION *********************************/
+
+void UART_ESP__ClearIsWakeupFlag(void)
+{
+	uart_esp__init_u.esp_is_wakeup = 0;
+}
+/******************************* END FUNCTION *********************************/
+
+uint8_t UART_ESP__GetIsWakeupFlag(void)
+{
+	return uart_esp__init_u.esp_is_wakeup;
+}
+
+/******************************* END FUNCTION *********************************/
+
+void UART_ESP__SetFinishTransmisionFlag(void)
+{
+	uart_esp__init_u.esp_finish_transmision = 1;
+}
+
+/******************************* END FUNCTION *********************************/
+
+void UART_ESP__ClearFinishTransmisionFlag(void)
+{
+	uart_esp__init_u.esp_finish_transmision = 0;
+}
+
+/******************************* END FUNCTION *********************************/
+
+uint8_t UART_ESP__GetFinishTransmisionFlag(void)
+{
+	return uart_esp__init_u.esp_finish_transmision;
+}
+
+/******************************* END FUNCTION *********************************/
+
+void UART_ESP__SetStartInit(void)
+{
+	uart_esp__init_u.esp_start_init = 1;
+}
+
+/******************************* END FUNCTION *********************************/
+
+void UART_ESP__ClearStartInit(void)
+{
+	uart_esp__init_u.esp_start_init = 0;
+}
+
+/******************************* END FUNCTION *********************************/
+
+uint8_t UART_ESP__GetStartInit(void)
+{
+	return uart_esp__init_u.esp_start_init;
+}
+
+/******************************* END FUNCTION *********************************/
+
+void UART_ESP__SetTimeout(void)
+{
+	uart_esp__init_u.esp_start_init = 1;
+}
+
+/******************************* END FUNCTION *********************************/
+
+void UART_ESP__ClearTimeout(void)
+{
+	uart_esp__init_u.esp_start_init = 0;
+}
+
+/******************************* END FUNCTION *********************************/
+
+uint8_t UART_ESP__GetTimeout(void)
+{
+	return uart_esp__init_u.esp_start_init;
 }
 
 

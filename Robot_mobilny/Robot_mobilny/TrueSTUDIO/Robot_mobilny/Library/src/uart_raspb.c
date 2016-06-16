@@ -238,7 +238,7 @@ void UART_RASPB__Poll(void)
 
   if(uart__status_raspb_u.receivedData)
   {
-
+	SYSTEM__SetEspTimeoutValue(60000); // timeout na 60s
     if(!ADC__GetIsObstacleFlag())
     {
       uart__status_raspb_u.Pwm_value = 80;

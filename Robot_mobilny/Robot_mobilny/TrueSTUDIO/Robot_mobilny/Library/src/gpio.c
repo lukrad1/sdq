@@ -63,6 +63,10 @@ void GPIO__Init(void)
 			   | (GPIO_MODER_MODE5_0); /* (2) */
   GPIOB->MODER = (GPIOB->MODER & ~(GPIO_MODER_MODE4))
 			   | (GPIO_MODER_MODE4_0); /* (3) */
+
+  GPIO__ConfigSharpEspEnable(0);
+  GPIO__ConfigMotorsEnable(0);
+  GPIO__ConfigRaspbEnable(0);
 }
 
 /******************************* END FUNCTION *********************************/
@@ -216,8 +220,8 @@ void GPIO__ConfigEnkoders(uint8_t state)
               | (GPIO_MODER_MODE11_0); /* (2) */
 
       /* Select mode */
-      /* Select input mode (00) on PC10 */
-      GPIOC->MODER = (GPIOC->MODER & ~(GPIO_MODER_MODE10));
+      /* Select input mode (00) on PC6 */
+      GPIOC->MODER = (GPIOC->MODER & ~(GPIO_MODER_MODE6));
 
       /* Configure Syscfg, exti and nvic for pushbutton PA0 */
       /* (1) PC as source input */
@@ -225,15 +229,15 @@ void GPIO__ConfigEnkoders(uint8_t state)
       /* (3) Rising edge */
       /* (4) Set priority */
       /* (5) Enable EXTI0_1_IRQn */
-      SYSCFG->EXTICR[2] = (SYSCFG->EXTICR[2] & ~SYSCFG_EXTICR3_EXTI10) | SYSCFG_EXTICR3_EXTI10_PC; /* (1) */
-      EXTI->IMR |= EXTI_IMR_IM10; /* (2) */
-      EXTI->RTSR |= EXTI_RTSR_TR10; /* (3) */
+      SYSCFG->EXTICR[1] = (SYSCFG->EXTICR[1] & ~SYSCFG_EXTICR2_EXTI6) | SYSCFG_EXTICR2_EXTI6_PC; /* (1) */
+      EXTI->IMR |= EXTI_IMR_IM6; /* (2) */
+      EXTI->RTSR |= EXTI_RTSR_TR6; /* (3) */
       //EXTI->FTSR |= EXTI_RTSR_TR10;
       NVIC_SetPriority(EXTI4_15_IRQn, 0); /* (4) */
       NVIC_EnableIRQ(EXTI4_15_IRQn); /* (5) */
 }
 
-void GPIO__ConfigSharpEnable(uint8_t state)
+void GPIO__ConfigSharpEspEnable(uint8_t state)
 {
 	/* (1) Enable the peripheral clock of GPIOC */
 	RCC->IOPENR |= RCC_IOPENR_GPIOCEN; /* (1) */
@@ -271,6 +275,27 @@ void GPIO__ConfigMotorsEnable(uint8_t state)
 	  else
 	  {
 		  GPIOB->BSRR = (1<<1);
+	  }
+
+}
+
+void GPIO__ConfigRaspbEnable(uint8_t state)
+{
+	/* (1) Enable the peripheral clock of GPIOC */
+	RCC->IOPENR |= RCC_IOPENR_GPIOCEN; /* (1) */
+	 /* (2) Select output mode (01) on GPIOC pin 9 */
+	GPIOC->MODER = (GPIOC->MODER & ~(GPIO_MODER_MODE14))
+				   | (GPIO_MODER_MODE14_0); /* (2) */
+	/* (3) Set open drain mode */
+			  GPIOC->OTYPER |= GPIO_OTYPER_OT_14; // (3)
+
+	  if(state)
+	  {
+		  GPIOC->BRR = (1<<14);
+	  }
+	  else
+	  {
+		  GPIOC->BSRR = (1<<14);
 	  }
 
 }

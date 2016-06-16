@@ -78,7 +78,7 @@ int main(void)
   SysTick_Config(4000); /* 1ms config */
 #ifdef ESP_8266
   UART_ESP__DMAConfig();
-   UART_ESP__Init(UART_ESP__BAUDRATE_9600);
+  UART_ESP__Init(UART_ESP__BAUDRATE_9600);
 #elif defined BLUETOOTH
   UART__DMAConfig();
   UART__Init(UART__BAUDRATE_19200);
@@ -193,12 +193,12 @@ void SysTick_Handler(void)
 void EXTI4_15_IRQHandler(void)
 {
   static uint8_t data[] = "DMA";
-  if((EXTI->PR & EXTI_PR_PR10) == EXTI_PR_PR10)
+  if((EXTI->PR & EXTI_PR_PR6) == EXTI_PR_PR6)
   {
     /* Clear EXTI 0 flag */
     // zerujemy flage przerwania ale UWAGA!!! Tutaj zerujemy ja JEDYNKA, a nie zerem !!!!
-    EXTI->PR |= EXTI_PR_PR10;
-
+    EXTI->PR |= EXTI_PR_PR6;
+    GPIOA->ODR ^= (1 << 5);//toggle green led on PA5
     OBSTACLE__EnkoderInterrupt();
   }
 
@@ -210,7 +210,7 @@ void EXTI4_15_IRQHandler(void)
     BUTTON__SetExtiButtonFlag();
     GPIOA->ODR ^= (1 << 5);//toggle green led on PA5
 #ifdef ESP_8266
-    UART_ESP__SendAllData();
+    //UART_ESP__SendAllData();
 #elif defined BLUETOOTH
     UART__StartDmaTransmision(data,"", 3,"");
 #endif

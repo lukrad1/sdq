@@ -39,6 +39,7 @@
 
   volatile uint8_t system__1msFlag = 0;
   volatile uint8_t system__30sFlag = 0;
+  volatile uint32_t system__esp_timeout = 0;
 /****************************************************************************/
 /*                         GLOBAL VARIABLE DECLARATION                      */
 /****************************************************************************/
@@ -140,25 +141,38 @@ void SYSTEM__1msPoll(void)
     OBSTACLE__1msPoll();
     ADC__1msPoll();
     LED__1msPoll();
-    counter++;
+
+    if(UART_ESP__GetIsWakeupFlag() && !UART_ESP__GetStartInit() && !UART_ESP__SetFinishTransmisionFlag())
+    {
+    	counter++;
+    }
+    else
+    {
+    	counter = 0;
+    }
+
+    if(UART_ESP__GetTimeout())
+	{
+		system__esp_timeout--;
+		if(system__esp_timeout < 10)
+		{
+			UART_ESP__SetFinishTransmisionFlag();
+			UART_ESP__ClearStartInit();
+			UART_ESP__ClearTimeout();
+			GPIO__ConfigSharpEspEnable(0);
+			GPIO__ConfigMotorsEnable(0);
+			GPIO__ConfigRaspbEnable(0);
+		}
+	}
   }
 
-	if(counter == 1)
-	{
-		//GPIOA->ODR ^= (1 << 5);//toggle green led on PA5
-		//GPIO__ConfigSharpEnable(1);
-		GPIO__ConfigMotorsEnable(1);
-	}
-	else if(counter == 10000)
-	{
-		//GPIO__ConfigSharpEnable(0);
-		GPIO__ConfigMotorsEnable(0);
-	}
-
-	if(counter > 20000)
+	if(counter >=4000)
 	{
 		counter = 0;
+		UART_ESP__SetStartInit();
 	}
+
+
 }
 
 /******************************* END FUNCTION *********************************/
@@ -176,6 +190,21 @@ void SYSTEM__30sPoll(void)
     UART_RASPB__SetVrefToSend();
     //UART__SetIntTempToSend();
     //SPI_Raspb__SetDefaultMessToSend();
+    //jezeli esp nie byl wybudzony
+    if(!UART_ESP__GetIsWakeupFlag())
+	{
+    	GPIO__ConfigSharpEspEnable(1);
+		UART_ESP__SetIsWakeupFlag();
+		UART_ESP__SetTimeout();
+		SYSTEM__SetEspTimeoutValue(25000); // 11s
+	}
+	else if(UART_ESP__GetFinishTransmisionFlag())
+	{
+		// blokada jednego cyklu aktywacji esp po transmisji, aby nie bylo tak, ze wylacze esp
+		// a rtc od razu mi go wybudzi
+		UART_ESP__ClearIsWakeupFlag();
+		UART_ESP__ClearFinishTransmisionFlag();
+	}
   }
 }
 
@@ -295,6 +324,13 @@ void SYSTEM__30sTick(void)
      //after wakeup flags of the sleep are cleared in SYSTEM__30sTick()
      //automatically
    }
+ }
+
+ /******************************* END FUNCTION *********************************/
+
+ void SYSTEM__SetEspTimeoutValue(uint32_t value)
+ {
+	 system__esp_timeout = value;
  }
 #ifdef __cplusplus
   }

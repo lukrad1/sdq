@@ -88,6 +88,18 @@ void UART_ESP__StartDmaTransmision(int8_t* data, int8_t* additional_text,
 void UART_ESP__SetIntTempToSend(void);
 void UART_ESP__SendAllData(void);
 
+void UART_ESP__SetIsWakeupFlag(void);
+void UART_ESP__ClearIsWakeupFlag(void);
+uint8_t UART_ESP__GetIsWakeupFlag(void);
+void UART_ESP__SetFinishTransmisionFlag(void);
+void UART_ESP__ClearFinishTransmisionFlag(void);
+uint8_t UART_ESP__GetFinishTransmisionFlag(void);
+void UART_ESP__SetStartInit(void);
+void UART_ESP__ClearStartInit(void);
+uint8_t UART_ESP__GetStartInit(void);
+void UART_ESP__SetTimeout(void);
+void UART_ESP__ClearTimeout(void);
+uint8_t UART_ESP__GetTimeout(void);
 #ifdef __cplusplus
   }
 #endif
