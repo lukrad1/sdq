@@ -337,6 +337,10 @@ void UART_ESP__Poll(void)
 	  all_data_is_send = 0;
   }
 
+  if(MOTORS__GetCurrentDirection() != JAZDA_ZATRZYMANA)
+  {
+	  SYSTEM__SetEspTimeoutValue(60000); // timeout na 60s
+  }
 
   if(uart_esp__status_u.receivedData)
   {

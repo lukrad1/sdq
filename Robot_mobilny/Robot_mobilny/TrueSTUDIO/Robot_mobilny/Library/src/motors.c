@@ -330,10 +330,10 @@ void MOTORS__skret_w_prawo(void)
 
 void MOTORS__jazda_do_tylu(void)
 {
-  kolo_przod_lewe_do_przodu();
-   kolo_przod_prawe_do_przodu();
-   kolo_tyl_lewe_do_przodu();
-   kolo_tyl_prawe_do_przodu();
+   kolo_przod_lewe_do_tylu();
+   kolo_przod_prawe_do_tylu();
+   kolo_tyl_lewe_do_tylu();
+   kolo_tyl_prawe_do_tylu();
    TIMER__PWM_DC1_2_ON();
    motors_data_s.current_direction = JAZDA_DO_TYLU;
 
@@ -341,10 +341,11 @@ void MOTORS__jazda_do_tylu(void)
 
 void MOTORS__jazda_do_przodu(void)
 {
-  kolo_przod_lewe_do_tylu();
-   kolo_przod_prawe_do_tylu();
-   kolo_tyl_lewe_do_tylu();
-   kolo_tyl_prawe_do_tylu();
+
+   kolo_przod_lewe_do_przodu();
+  kolo_przod_prawe_do_przodu();
+  kolo_tyl_lewe_do_przodu();
+  kolo_tyl_prawe_do_przodu();
    TIMER__PWM_DC1_2_ON();
    motors_data_s.current_direction = JAZDA_DO_PRZODU;
 }
