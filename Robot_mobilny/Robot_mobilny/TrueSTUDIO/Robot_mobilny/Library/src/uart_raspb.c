@@ -238,10 +238,10 @@ void UART_RASPB__Poll(void)
 
   if(uart__status_raspb_u.receivedData)
   {
-	SYSTEM__SetEspTimeoutValue(60000); // timeout na 60s
+	SYSTEM__SetEspTimeoutValue(80000); // timeout na 80s
     if(!ADC__GetIsObstacleFlag())
     {
-      uart__status_raspb_u.Pwm_value = 80;
+      uart__status_raspb_u.Pwm_value = 65;
       TIMER__PWM_DC1_2_Change_Duty(uart__status_raspb_u.Pwm_value);
       //uart__status_u.sendPWMValue = 1;
     }
@@ -276,7 +276,7 @@ void UART_RASPB__Poll(void)
       MOTORS__SetLastDirection(JAZDA_DO_PRZODU);
       OBSTACLE__ClearAvoidObstacleIsrFlag();
     }
-    else if(raspb_RxBuffer[0] == 37)
+   /* else if(raspb_RxBuffer[0] == 37)
     {
       if(!ADC__GetIsObstacleFlag())
       {
@@ -285,7 +285,7 @@ void UART_RASPB__Poll(void)
         //uart__status_u.sendPWMValue = 1;
       }
 
-    }
+    }*/
 
     uart__status_raspb_u.receivedData = 0;
     // jezeli bedzie cos do wyslania, to ponizej te flage wyzeruje w funkcji start dma

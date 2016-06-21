@@ -509,9 +509,9 @@ void ADC__1msPoll(void)
       {
         // stop and go in last direction, now inactive
         //OBSTACLE__StopIdentificationTimer();
-        if(timer__data_u.time_pwm_last_value > 80)
+        if(timer__data_u.time_pwm_last_value > 65)
         {
-          TIMER__PWM_DC1_2_Change_Duty(70);
+          TIMER__PWM_DC1_2_Change_Duty(65);
         }
         adc__data_s.is_Obstacle = 1;
       }

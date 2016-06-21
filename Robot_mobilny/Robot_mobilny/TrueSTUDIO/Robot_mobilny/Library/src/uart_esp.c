@@ -70,7 +70,7 @@ static volatile union uart_esp__init_u
     uint8_t esp_finish_transmision: 1;
     uint8_t esp_start_init: 1;
     uint8_t esp_transmision_timeout: 1;
-    uint8_t flag4: 1;
+    uint8_t raspberry_is_run: 1;
     uint8_t flag5: 1;
     uint8_t flag6: 1;
     uint8_t flag7 : 1;
@@ -325,7 +325,7 @@ void UART_ESP__Poll(void)
 {
   static uint32_t timeout = 0;
   static uint32_t run_server_timeout = 0xFFFF;
-  static all_data_is_send = 0;
+  static uint8_t all_data_is_send = 0;
 
   if(UART_ESP__GetStartInit() && !all_data_is_send)
   {
@@ -339,7 +339,7 @@ void UART_ESP__Poll(void)
 
   if(MOTORS__GetCurrentDirection() != JAZDA_ZATRZYMANA)
   {
-	  SYSTEM__SetEspTimeoutValue(60000); // timeout na 60s
+	  SYSTEM__SetEspTimeoutValue(80000); // timeout na 80s
   }
 
   if(uart_esp__status_u.receivedData)
@@ -355,11 +355,15 @@ void UART_ESP__Poll(void)
             && RxBuffer_esp[6] == 0x7A)
     {
 
-      //turn on raspberry and motors
-      GPIO__ConfigRaspbEnable(1);
-      GPIO__ConfigMotorsEnable(1);
-      SYSTEM__SetEspTimeoutValue(60000); // timeout na 60s
-      uart_esp__status_u.sendEspData = 1;
+      if(!UART_ESP__GetRaspberry_Run_Flag())
+      {
+		  //turn on raspberry and motors
+		  GPIO__ConfigRaspbEnable(1);
+		  GPIO__ConfigMotorsEnable(1);
+		  SYSTEM__SetEspTimeoutValue(120000); // timeout na 120s
+		  uart_esp__status_u.sendEspData = 1;
+		  uart_esp__init_u.raspberry_is_run = 1;
+      }
     }
     
     
@@ -562,6 +566,21 @@ uint8_t UART_ESP__GetTimeout(void)
 	return uart_esp__init_u.esp_start_init;
 }
 
+/******************************* END FUNCTION *********************************/
+
+void UART_ESP__ClearRaspberry_Run_Flag(void)
+{
+	uart_esp__init_u.raspberry_is_run = 0;
+}
+
+/******************************* END FUNCTION *********************************/
+
+uint8_t UART_ESP__GetRaspberry_Run_Flag(void)
+{
+	return uart_esp__init_u.raspberry_is_run;
+}
+
+/******************************* END FUNCTION *********************************/
 
 #ifdef __cplusplus
 }

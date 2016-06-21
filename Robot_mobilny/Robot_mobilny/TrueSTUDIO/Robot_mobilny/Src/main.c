@@ -323,7 +323,7 @@ void RTC_IRQHandler(void)
   {
     RTC->ISR &=~ RTC_ISR_WUTF; /* Reset Wake up flag */
     EXTI->PR |= EXTI_PR_PR20; /* clear exti line 20 flag */
-    GPIOA->ODR ^= (1 << 5) ; /* Toggle Green LED */
+    //GPIOA->ODR ^= (1 << 5) ; /* Toggle Green LED */
     SYSTEM__30sTick();
   }
   else

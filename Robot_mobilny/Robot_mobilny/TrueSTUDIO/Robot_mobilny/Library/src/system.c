@@ -27,7 +27,8 @@
 #include "button_engine.h"
 #include "led.h"
 #include "uart_raspb.h"
-
+#include "uart_esp.h"
+#include "motors.h"
 /****************************************************************************/
 /*                      DECLARATION AND DEFINITIONS                         */
 /****************************************************************************/
@@ -134,6 +135,9 @@ static void system__CheckInterruptSleepFlag(void)
 void SYSTEM__1msPoll(void)
 {
 	static uint16_t counter = 0;
+	static uint8_t rasp_pin_counter_Off = 0;
+	static uint32_t rasp_pin_counter_On = 0;
+
 
   if(system__1msFlag)
   {
@@ -142,7 +146,47 @@ void SYSTEM__1msPoll(void)
     ADC__1msPoll();
     LED__1msPoll();
 
-    if(UART_ESP__GetIsWakeupFlag() && !UART_ESP__GetStartInit() && !UART_ESP__SetFinishTransmisionFlag())
+    //-----------------------------------------------------------------------------------------
+
+    //jezeli na raspberry pojawi sie odpowiedni stan to skroc timeout i wylacz po 15s
+    if(((GPIOA->IDR & GPIO_IDR_ID6) == GPIO_IDR_ID6)
+    	&& rasp_pin_counter_Off != 0xFF && UART_ESP__GetRaspberry_Run_Flag())
+    {
+    	rasp_pin_counter_Off++;
+    	if(rasp_pin_counter_Off > 10)
+    	{
+    		SYSTEM__SetEspTimeoutValue(15000);
+    		rasp_pin_counter_Off = 0xFF;
+    	}
+    }
+    // w przeciwnym razie, jezeli rasp jest zalaczony i mam stan niski na wejsciu to przedluzaj caly czas
+    // dzialanie urzadzenia, chyba ze minie 8 min i urzadzenie nadal bedzie chodzic
+    else if(((GPIOA->IDR & GPIO_IDR_ID6) != GPIO_IDR_ID6)
+    		&& rasp_pin_counter_Off != 0xFF && UART_ESP__GetRaspberry_Run_Flag()
+    		&& MOTORS__GetCurrentDirection() == JAZDA_ZATRZYMANA)
+	{
+    	rasp_pin_counter_On++;
+		if(rasp_pin_counter_On % 1000)
+		{
+			SYSTEM__SetEspTimeoutValue(60000);
+		}
+		if(rasp_pin_counter_On > 480000)	//8min
+		{
+			// natychmiast wylacz wszystko
+			SYSTEM__SetEspTimeoutValue(9);
+		}
+	}
+
+    else if(MOTORS__GetCurrentDirection() != JAZDA_ZATRZYMANA)
+    {
+    	rasp_pin_counter_On = 0;
+    }
+
+    //-----------------------------------------------------------------------------------------
+    // jezeli urzadzenie (esp) jest uruchomione, ale jeszcze nie zainicjalizowane to zaczynamy
+    // odliczac czas zwloki do inicjalizacji servera. Jest on konieczny, gdyz bez niego ramki dochodzily
+    // za wczesnie do esp i byly gubione
+    if(UART_ESP__GetIsWakeupFlag() && !UART_ESP__GetStartInit() && !UART_ESP__GetFinishTransmisionFlag())
     {
     	counter++;
     }
@@ -151,6 +195,9 @@ void SYSTEM__1msPoll(void)
     	counter = 0;
     }
 
+    //-----------------------------------------------------------------------------------------
+
+    //wlasciwa funkcja odliczania timeoutu od wylaczenia komunikacji z raspberry i silnikami itp.
     if(UART_ESP__GetTimeout())
 	{
 		system__esp_timeout--;
@@ -162,14 +209,24 @@ void SYSTEM__1msPoll(void)
 			GPIO__ConfigSharpEspEnable(0);
 			GPIO__ConfigMotorsEnable(0);
 			GPIO__ConfigRaspbEnable(0);
+			UART_ESP__ClearRaspberry_Run_Flag();
+			rasp_pin_counter_Off = 0;
+			rasp_pin_counter_On = 0;
+			GPIOA->BSRR |= (1 << 5); // turn off led
+			//dodac odczyt z raspberry ze jezeli chodzi to ustaw pin i raaspberry odczyta, uspi sie i dopiero go wylacz
 		}
 	}
+
+    //-----------------------------------------------------------------------------------------
   }
 
+  	// jezeli powyzej counter zostanie ustawiony na wartosci wieksza od okreslonej to uruchamiamy inicjalizacje
+  	// serwera na esp
 	if(counter >=4000)
 	{
 		counter = 0;
 		UART_ESP__SetStartInit();
+
 	}
 
 
@@ -196,7 +253,7 @@ void SYSTEM__30sPoll(void)
     	GPIO__ConfigSharpEspEnable(1);
 		UART_ESP__SetIsWakeupFlag();
 		UART_ESP__SetTimeout();
-		SYSTEM__SetEspTimeoutValue(25000); // 11s
+		SYSTEM__SetEspTimeoutValue(20000); // 11s
 	}
 	else if(UART_ESP__GetFinishTransmisionFlag())
 	{
@@ -204,6 +261,7 @@ void SYSTEM__30sPoll(void)
 		// a rtc od razu mi go wybudzi
 		UART_ESP__ClearIsWakeupFlag();
 		UART_ESP__ClearFinishTransmisionFlag();
+		GPIOA->BSRR |= (1 << 5); // turn off led
 	}
   }
 }

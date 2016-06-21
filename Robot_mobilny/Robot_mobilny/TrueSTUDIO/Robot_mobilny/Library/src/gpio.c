@@ -64,6 +64,11 @@ void GPIO__Init(void)
   GPIOB->MODER = (GPIOB->MODER & ~(GPIO_MODER_MODE4))
 			   | (GPIO_MODER_MODE4_0); /* (3) */
 
+
+	/* Select mode */
+	/* Select input mode (00) on PC13 */
+	GPIOA->MODER = (GPIOA->MODER & ~(GPIO_MODER_MODE6));
+
   GPIO__ConfigSharpEspEnable(0);
   GPIO__ConfigMotorsEnable(0);
   GPIO__ConfigRaspbEnable(0);

@@ -100,6 +100,8 @@ uint8_t UART_ESP__GetStartInit(void);
 void UART_ESP__SetTimeout(void);
 void UART_ESP__ClearTimeout(void);
 uint8_t UART_ESP__GetTimeout(void);
+void UART_ESP__ClearRaspberry_Run_Flag(void);
+uint8_t UART_ESP__GetRaspberry_Run_Flag(void);
 #ifdef __cplusplus
   }
 #endif

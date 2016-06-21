@@ -55,6 +55,7 @@ Sub Globals
 	Dim Button6 As Button
 	Dim Button20 As Button
 	Dim Button21 As Button
+	Dim Button22 As Button
 	Dim Adapter As Serial	'zmienna pomocnicza do połączenia bluetooth'
 	Dim Timer1 As Timer		'zmienna pomocnicza określająca timer = definicja zmiennej timer'
 	Dim Timer2 As Timer
@@ -217,7 +218,7 @@ Sub Activity_Create(FirstTime As Boolean)
 	Checkbox1.Top = Activity.Height/6	 
 	Checkbox1.Left = 0
 	Checkbox1.TextSize = Checkbox1.TextSize * 1
-	Checkbox1.Text = "Akcelerometr OFF"
+	Checkbox1.Text = "Sterowanie zdalne"
 	Checkbox1.Enabled = True
 	'**********************************************************************************************************************'
 	
@@ -252,7 +253,7 @@ Sub Activity_Create(FirstTime As Boolean)
 	Timer4.Initialize("Timer4", 3000)
  	Timer4.Enabled=False
 
-	Timer5_Wybudzenie.Initialize("Timer5_Wybudzenie",10000)
+	Timer5_Wybudzenie.Initialize("Timer5_Wybudzenie",5000)
 	Timer5_Wybudzenie.Enabled=False
 	
 	Ekran.KeepAlive(True)				'załączenie opcji ciągłego podświetlania ekranu'
@@ -397,7 +398,7 @@ Sub Create_Main_Window
 	Checkbox1.Top = Activity.Height/6	 
 	Checkbox1.Left = 0
 	Checkbox1.TextSize = Checkbox1.TextSize * 1
-	Checkbox1.Text = "Akcelerometr OFF"
+	Checkbox1.Text = "Sterowanie zdalne"
 	Checkbox1.Enabled = True
 	'**********************************************************************************************************************'
 	
@@ -460,7 +461,7 @@ Sub Timer3_tick
 	   	Rozkaz(13)
 	   	Rozkaz(10)
 		End If
-		webview2.LoadUrl("http://lukrad1.ddns.net:5010/go_left")
+		webview2.LoadUrl("http://lukrad1991.ddns.net:5010/go_left")
 	Else If xx <= 35 Then
 		If Nadawanie = True Then			'jeżeli mamy połączenie to spróbuj wysłać dane'
 	   'komenda "20" - jazda w prawo
@@ -470,7 +471,7 @@ Sub Timer3_tick
 	   Rozkaz(13)
 	   Rozkaz(10)		
 	   End If
-	   webview2.LoadUrl("http://lukrad1.ddns.net:5010/go_right")
+	   webview2.LoadUrl("http://lukrad1991.ddns.net:5010/go_right")
 	Else If yy >= 70 Then
 	 	If Nadawanie = True Then			'jeżeli mamy połączenie to spróbuj wysłać dane'
 	   	'komenda "25" - jazda do tylu
@@ -480,7 +481,7 @@ Sub Timer3_tick
 	   Rozkaz(13)
 	   Rozkaz(10)
 		End If
-		webview2.LoadUrl("http://lukrad1.ddns.net:5010/go_back")
+		webview2.LoadUrl("http://lukrad1991.ddns.net:5010/go_back")
 	 Else If yy <= 45 Then
 	 	If Nadawanie = True Then			'jeżeli mamy połączenie to spróbuj wysłać dane'
 	    'komenda "11" - jazda do przodu' odwrotne podlaczenie wiec zamiana tyl przod
@@ -490,7 +491,7 @@ Sub Timer3_tick
 	   Rozkaz(13)
 	   Rozkaz(10)
 	   End If  
-	   webview2.LoadUrl("http://lukrad1.ddns.net:5010/go_ahead")
+	   webview2.LoadUrl("http://lukrad1991.ddns.net:5010/go_ahead")
 	 Else If xx > 35 AND xx < 65 AND yy > 45 AND yy < 70 Then
 	 	If Nadawanie = True Then			'jeżeli mamy połączenie to spróbuj wysłać dane'
 	   	'komenda "22" - stop'
@@ -500,7 +501,7 @@ Sub Timer3_tick
 	   	Rozkaz(13)
 	   	Rozkaz(10)
 		End If
-		webview2.LoadUrl("http://lukrad1.ddns.net:5010/stop_robot")
+		webview2.LoadUrl("http://lukrad1991.ddns.net:5010/stop_robot")
 	 End If  
 	
 	xx = -1
@@ -522,13 +523,13 @@ End Sub
 
 Sub Timer5_Wybudzenie_tick
 	
-	webview2.LoadUrl("http://lukrad1.ddns.net:5020/wybudz")
+	webview2.LoadUrl("http://lukrad1991.ddns.net:5020/wybudz")
 	Czekaj_za_wybudzeniem_timeout = Czekaj_za_wybudzeniem_timeout + 1
-	If Czekaj_za_wybudzeniem_timeout > 7 Then
+	If Czekaj_za_wybudzeniem_timeout > 10 Then
 		Button21.Enabled = True
 		Timer5_Wybudzenie.Enabled = False
 		Czekaj_za_wybudzeniem_timeout = 0
-		webview1.LoadUrl("http://lukrad1.ddns.net:9000/?action=stream")
+		webview1.LoadUrl("http://lukrad1991.ddns.net:9000/?action=stream")
 	End If
 	
 	
@@ -697,7 +698,7 @@ Sub Button1_Click
 	 End If
 	 
 	 If Aktywny2LButton = True Then
-	 webview2.LoadUrl("http://lukrad1.ddns.net:5010/go_ahead")
+	 webview2.LoadUrl("http://lukrad1991.ddns.net:5010/go_ahead")
 	 End If
 	 
 	 
@@ -722,7 +723,7 @@ Sub Button2_Click
 	 End If
 	 
 	 If Aktywny2LButton = True Then
-	 webview2.LoadUrl("http://lukrad1.ddns.net:5010/go_left")
+	 webview2.LoadUrl("http://lukrad1991.ddns.net:5010/go_left")
 	 End If
 	 
 End Sub
@@ -744,7 +745,7 @@ Sub Button3_Click
 	 End If
 	 
 	If Aktywny2LButton = True Then
-	 webview2.LoadUrl("http://lukrad1.ddns.net:5010/stop_robot")
+	 webview2.LoadUrl("http://lukrad1991.ddns.net:5010/stop_robot")
 	 End If
 End Sub
 
@@ -766,7 +767,7 @@ Sub Button4_Click
 	 End If
 	 
 	If Aktywny2LButton = True Then
-	 webview2.LoadUrl("http://lukrad1.ddns.net:5010/go_right")
+	 webview2.LoadUrl("http://lukrad1991.ddns.net:5010/go_right")
 	 End If
 End Sub
 Sub Button5_Click
@@ -787,7 +788,7 @@ Sub Button5_Click
 	 End If
 	 
 	 If Aktywny2LButton = True Then
-	 webview2.LoadUrl("http://lukrad1.ddns.net:5010/go_back")
+	 webview2.LoadUrl("http://lukrad1991.ddns.net:5010/go_back")
 	 End If
 	
 End Sub
@@ -830,8 +831,13 @@ End Sub
 
 Sub Button21_Click
 	Timer5_Wybudzenie.Enabled = True
-	Button21.Enabled = False
-	webview1.LoadUrl("http://lukrad1.ddns.net:9000/?action=stream")
+	Button21.Enabled = True
+	webview1.LoadUrl("http://lukrad1991.ddns.net:9000/?action=stream")
+End Sub
+
+Sub Button22_Click
+	Timer5_Wybudzenie.Enabled = False
+	webview2.LoadUrl("http://lukrad1991.ddns.net:5010/shutdown")
 End Sub
 
 Sub Activity_KeyPress (KeyCode As Int) As Boolean	'funkcja wyłączająca program, czyli sprzątająca śmieci'
@@ -924,7 +930,15 @@ Activity.Title = "Sterowanie Robotem Mobilnym"
 	Button21.Enabled = True
 	'**********************************************************************************************************************'
 	
-
+	Button22.Width = Activity.Width/4		'ten przycisk ma szerokość całego okna programu'
+	Button22.Height = Activity.Height/9	'ponieważ mam mieć w oknie 7 przycisków w pionie, więc pierwszy ma wysokość 1/7 okna'
+	Button22.Top = (Activity.Height/9) * 6'polozenie tej etykiety od gory to zero, czyli od samej gory okna programu'
+	Button22.Left = (Activity.Width/4) * 0'tak samo jest z polozeniem od lewej strony ekranu, 0 czyli przy oknie'
+	Button22.TextSize = Label2.TextSize * 0.7 'Powiększenie czcionki oryginalnej dwukrotnie'
+	Button22.Text = "Uśpij urządzenie"
+	Button22.Enabled = True
+	'**********************************************************************************************************************'
+	
 
 	webview1.Width = Activity.Width		'ten przycisk ma szerokość całego okna programu'
 	webview1.Height = (Activity.Height/6)*3	'ponieważ mam mieć w oknie 7 przycisków w pionie, więc pierwszy ma wysokość 1/7 okna'
