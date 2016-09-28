@@ -1,0 +1,24 @@
+﻿<Page
+    x:Class="Robot_Mobilny.MainPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Robot_Mobilny"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <Grid Margin="0,0.333,0,-0.333">
+        <Image x:Name="image" HorizontalAlignment="Left" Height="261" Margin="10,73,0,0" VerticalAlignment="Top" Width="380" Source="zdj.png" />
+        <Button x:Name="button" Content="DO PRZODU" HorizontalAlignment="Left" Margin="133,370,0,-55" VerticalAlignment="Top" Height="46" Width="128"/>
+        <Button x:Name="button1" Content="STOP" HorizontalAlignment="Left" Margin="143,440,0,0" VerticalAlignment="Top" Width="59"/>
+        <Button x:Name="button2" Content="W PRAWO" HorizontalAlignment="Left" Margin="270,440,0,0" VerticalAlignment="Top" Width="110" />
+        <Button x:Name="button3" Content="W LEWO" HorizontalAlignment="Left" Margin="18,440,0,0" VerticalAlignment="Top" Width="110"/>
+        <Button x:Name="button4" Content="DO TYŁU" HorizontalAlignment="Left" Margin="133,504,0,-200" VerticalAlignment="Top" Width="128"/>
+        <Button x:Name="button5" Content="WYBUDŹ" HorizontalAlignment="Left" Margin="270,558,0,0" VerticalAlignment="Top" Width="110"/>
+        <Button x:Name="button6" Content="UŚPIJ" HorizontalAlignment="Left" Margin="18,558,0,0" VerticalAlignment="Top" Width="110"/>
+
+    </Grid>
+
+
+</Page>

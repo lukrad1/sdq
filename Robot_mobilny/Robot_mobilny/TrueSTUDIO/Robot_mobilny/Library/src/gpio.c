@@ -254,11 +254,11 @@ void GPIO__ConfigSharpEspEnable(uint8_t state)
 
 	  if(state)
 	  {
-		  GPIOC->BRR = (1<<9);
+		  GPIOC->BRR = (1<<9); // turn on by gnd
 	  }
 	  else
 	  {
-		  GPIOC->BSRR = (1<<9);
+		  GPIOC->BSRR = (1<<9); // set
 	  }
 
 }
